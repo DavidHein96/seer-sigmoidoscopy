@@ -1,3 +1,7 @@
+
+# text data
+*.txt
+
 # History files
 .Rhistory
 .Rapp.history
@@ -37,3 +41,8 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+
+old_code_want_to_keep.R
+
+mdir_res.rds
+*.Rproj
