@@ -1,7 +1,7 @@
 SEER Sigmoidoscopy Project
 ================
 <david.hein@utsouthwestern.edu>
-2023-02-20
+2023-03-09
 
 - <a href="#1-load-packages-and-raw-data"
   id="toc-1-load-packages-and-raw-data">1 Load packages and raw data</a>
@@ -53,9 +53,9 @@ SEER Sigmoidoscopy Project
 - <a href="#7-km-plots-with-better-95-cis"
   id="toc-7-km-plots-with-better-95-cis">7 KM Plots with better 95%
   CIs</a>
-- <a href="#8-css-plots" id="toc-8-css-plots">8 CSS Plots</a>
-- <a href="#9-os-plots" id="toc-9-os-plots">9 OS plots</a>
-- <a href="#10-session-info" id="toc-10-session-info">10 Session Info</a>
+  - <a href="#71-css-plots" id="toc-71-css-plots">7.1 CSS Plots</a>
+  - <a href="#72-os-plots" id="toc-72-os-plots">7.2 OS plots</a>
+- <a href="#8-session-info" id="toc-8-session-info">8 Session Info</a>
 
 <br>
 
@@ -69,6 +69,7 @@ library(survminer)
 library(tidyverse)
 library(survRM2)
 library(km.ci)
+library(readr)
 set.seed(2023)
 
 seer_data <- read_delim("seer_data.txt", delim = "\t", escape_double = FALSE, trim_ws = TRUE)
@@ -104,9 +105,9 @@ new_data <- new_data %>%filter(`Histologic Type ICD-O-3`==8140)
 new_data <- new_data %>% mutate(can_see_sigmoid = ifelse( `Primary Site` %in% c(186,187,199,209),1,0))
 
 # make new variable for 3 age groups
-new_data <- new_data %>% mutate(age_group = as.numeric(str_sub(`Age recode with single ages and 100+`,1,2)))
-new_data <- new_data %>% mutate(age_group_final = ifelse(age_group <45,'under45', 'over50'))%>%
-  mutate(age_group_final = ifelse(age_group <50 & age_group >= 45,'45-50',age_group_final))
+new_data <- new_data %>% mutate(age_numeric = as.numeric(str_extract(`Age recode with single ages and 100+`,"[:digit:]+")))
+new_data <- new_data %>% mutate(age_group_final = ifelse(age_numeric <45,'under45', 'over50'))%>%
+  mutate(age_group_final = ifelse(age_numeric <50 & age_numeric >= 45,'45-50',age_group_final))
 
 # Combine the two stages
 new_data<-new_data%>%mutate(new_stage = ifelse(`Summary stage 2000 (1998-2017)`=="Blank(s)",
@@ -164,7 +165,8 @@ new_data5<-new_data4 %>% dplyr::select(Sex,
                                        cancer_specific_status, 
                                        overall_status,
                                        `Survival months`,
-                                       `Primary Site`)%>%
+                                       `Primary Site`,
+                                       age_numeric)%>%
                           rename(survival_months=`Survival months`, primary_site = `Primary Site`)
 
 # set new factor levels, first level is the reference group
@@ -199,42 +201,42 @@ table(new_data5$primary_site,new_data5$age_group_final,new_data5$new_stage)
     ## 
     ##      
     ##       over50 under45 45-50
-    ##   180  13198     389   372
-    ##   182  13650     378   367
-    ##   183   3115      99    82
-    ##   184   5866     256   195
-    ##   185   1812     113    81
+    ##   180  13202     385   372
+    ##   182  13659     369   367
+    ##   183   3119      95    82
+    ##   184   5873     249   195
+    ##   185   1813     112    81
     ##   186   3521     231   202
-    ##   187  17389     987  1048
-    ##   199   6519     414   416
-    ##   209  18180    1305  1441
+    ##   187  17396     980  1048
+    ##   199   6522     411   416
+    ##   209  18196    1289  1441
     ## 
     ## , ,  = Regional
     ## 
     ##      
     ##       over50 under45 45-50
-    ##   180  18453     769   714
-    ##   182  15959     778   610
-    ##   183   4168     271   166
-    ##   184   7985     510   397
-    ##   185   3233     264   202
-    ##   186   5212     531   405
-    ##   187  23032    2213  2041
-    ##   199   9707    1012   956
-    ##   209  22956    2819  2539
+    ##   180  18461     761   714
+    ##   182  15970     767   610
+    ##   183   4169     270   166
+    ##   184   7993     502   397
+    ##   185   3237     260   202
+    ##   186   5213     530   405
+    ##   187  23042    2203  2041
+    ##   199   9709    1010   956
+    ##   209  22960    2815  2539
     ## 
     ## , ,  = Distant
     ## 
     ##      
     ##       over50 under45 45-50
-    ##   180  10628     507   579
-    ##   182   7312     405   421
-    ##   183   2149     173   138
-    ##   184   3715     321   238
+    ##   180  10633     502   579
+    ##   182   7316     401   421
+    ##   183   2150     172   138
+    ##   184   3716     320   238
     ##   185   1579     152   138
     ##   186   2641     343   286
-    ##   187  14875    1799  1551
-    ##   199   6377     736   666
+    ##   187  14879    1795  1551
+    ##   199   6378     735   666
     ##   209  12285    1575  1452
 
 <br>
@@ -288,9 +290,9 @@ knitr::kable(age_log,digits=2)
 
 | term                   | estimate | std.error | statistic | p.value | conf.low | conf.high |
 |:-----------------------|---------:|----------:|----------:|--------:|---------:|----------:|
-| (Intercept)            |     1.26 |      0.00 |     58.96 |       0 |     1.25 |      1.27 |
-| age_group_finalunder45 |     2.05 |      0.02 |     43.44 |       0 |     1.99 |      2.12 |
-| age_group_final45-50   |     2.19 |      0.02 |     44.78 |       0 |     2.11 |      2.26 |
+| (Intercept)            |     1.26 |      0.00 |     58.91 |       0 |     1.25 |      1.27 |
+| age_group_finalunder45 |     2.07 |      0.02 |     43.81 |       0 |     2.00 |      2.14 |
+| age_group_final45-50   |     2.19 |      0.02 |     44.79 |       0 |     2.11 |      2.26 |
 
 ## 4.3 Logistic results: stage
 
@@ -340,20 +342,20 @@ knitr::kable(multi_log,digits=2)
 
 | term                                               | estimate | std.error | statistic | p.value | conf.low | conf.high |
 |:---------------------------------------------------|---------:|----------:|----------:|--------:|---------:|----------:|
-| (Intercept)                                        |     0.96 |      0.01 |     -4.28 |    0.00 |     0.94 |      0.98 |
-| race_ethHispanic (All Races)                       |     1.18 |      0.01 |     13.57 |    0.00 |     1.15 |      1.21 |
-| race_ethNon-Hispanic American Indian/Alaska Native |     1.17 |      0.04 |      3.58 |    0.00 |     1.08 |      1.28 |
-| race_ethNon-Hispanic Asian or Pacific Islander     |     1.56 |      0.01 |     31.50 |    0.00 |     1.52 |      1.61 |
+| (Intercept)                                        |     0.96 |      0.01 |     -4.24 |    0.00 |     0.94 |      0.98 |
+| race_ethHispanic (All Races)                       |     1.18 |      0.01 |     13.52 |    0.00 |     1.15 |      1.21 |
+| race_ethNon-Hispanic American Indian/Alaska Native |     1.17 |      0.04 |      3.57 |    0.00 |     1.07 |      1.28 |
+| race_ethNon-Hispanic Asian or Pacific Islander     |     1.56 |      0.01 |     31.49 |    0.00 |     1.52 |      1.61 |
 | race_ethNon-Hispanic Black                         |     0.77 |      0.01 |    -21.27 |    0.00 |     0.75 |      0.79 |
-| race_ethNon-Hispanic Unknown Race                  |     1.34 |      0.07 |      4.30 |    0.00 |     1.18 |      1.54 |
-| SexMale                                            |     1.52 |      0.01 |     55.26 |    0.00 |     1.50 |      1.55 |
-| age_group_finalunder45                             |     2.01 |      0.02 |     41.81 |    0.00 |     1.95 |      2.08 |
-| age_group_final45-50                               |     2.15 |      0.02 |     43.25 |    0.00 |     2.07 |      2.22 |
-| new_stageRegional                                  |     1.01 |      0.01 |      0.75 |    0.45 |     0.99 |      1.02 |
-| new_stageDistant                                   |     1.16 |      0.01 |     14.50 |    0.00 |     1.14 |      1.18 |
+| race_ethNon-Hispanic Unknown Race                  |     1.34 |      0.07 |      4.29 |    0.00 |     1.18 |      1.54 |
+| SexMale                                            |     1.52 |      0.01 |     55.22 |    0.00 |     1.50 |      1.55 |
+| age_group_finalunder45                             |     2.03 |      0.02 |     42.11 |    0.00 |     1.96 |      2.10 |
+| age_group_final45-50                               |     2.15 |      0.02 |     43.26 |    0.00 |     2.07 |      2.22 |
+| new_stageRegional                                  |     1.01 |      0.01 |      0.72 |    0.47 |     0.99 |      1.02 |
+| new_stageDistant                                   |     1.16 |      0.01 |     14.45 |    0.00 |     1.14 |      1.18 |
 | year_of_diagyod2                                   |     0.98 |      0.01 |     -2.06 |    0.04 |     0.96 |      1.00 |
 | year_of_diagyod3                                   |     0.99 |      0.01 |     -1.31 |    0.19 |     0.96 |      1.01 |
-| year_of_diagyod4                                   |     1.02 |      0.01 |      2.01 |    0.04 |     1.00 |      1.04 |
+| year_of_diagyod4                                   |     1.02 |      0.01 |      2.00 |    0.05 |     1.00 |      1.04 |
 
 <br>
 
@@ -469,7 +471,7 @@ ggsurvplot(km_site,censor=FALSE,ylim=c(0.5,1),xlim=c(0,100))
 
 ``` r
 # take out patients with 0 survival months
-new_data6<-new_data5%>%filter(survival_months>0)
+new_data6<-new_data5#%>%filter(survival_months>0)
 new_data7<- new_data6%>%select(survival_months,cancer_specific_status,can_see_sigmoid,age_group_final,new_stage,overall_status)
 
 # computes rmst with age group as a covariate, takes dataframe, vector of time points, and the stage as inputs, returns a data frame with results across time points in columns, rows are the stats we are looking at (add option to switch to OS)
@@ -538,6 +540,33 @@ compute_rmst_individually <- function(data,time_points,stage,css=TRUE){
   return(rms_combined_res_final)
 }
 
+
+# THIS FUNCTION DOESNT WORK JUST EXPERIMENTAL
+compute_rmst_all <- function(data, time_points, css=TRUE){
+  
+  data=new_data7
+  covs<-model.matrix(~age_group_final*can_see_sigmoid*new_stage,data=data)
+  covs<-covs[,-1]
+  rms_combined <- data.frame(col1="rmst")
+  
+  rms_temp <- rmst2(time=data$survival_months,status=data$cancer_specific_status,arm=data$can_see_sigmoid,covariates=covs,tau=60,alpha=0.05)
+  
+  for (t in time_points){
+    # calcs rmst with alpha corrected for 3 stages and number of time points 
+    if (css) {
+       rms_temp <- rmst2(time=data$survival_months,status=data$cancer_specific_status,arm=data$can_see_sigmoid,covariates=covs,tau=t,alpha=0.05/(3*length(time_points)) )
+    }else{
+       rms_temp <- rmst2(time=data$survival_months,status=data$overall_status,arm=data$can_see_sigmoid,covariates=covs,tau=t,alpha=0.05/(3*length(time_points)) )
+    }
+   
+    # round and add results to the data frame, each time point will be added as a block of columns 
+    rms_temp_res <- data.frame(rms_temp$RMST.difference.adjusted) %>% select(-se.coef., -z ) %>% mutate_all((function(x) round(x,digits=3))) %>% setNames( paste0('m_',t,"_",names(.)) )
+    rms_combined <- cbind(rms_combined,rms_temp_res)
+  }
+  return(rms_combined)
+  
+}
+
 local_res_combined_css <- compute_rmst_individually(new_data7,c(12,24,60,120),"Localized")
 regional_res_combined_css <- compute_rmst_individually(new_data7,c(12,24,60,120),"Regional")
 distant_res_combined_css <- compute_rmst_individually(new_data7,c(12,24,60,120),"Distant")
@@ -558,10 +587,10 @@ knitr::kable(local_res_combined_css,digits=3)
 ```
 
 |     | col1 | Diff 12 | Low CI 12 | Up CI 12 | p val 12 | Diff 24 | Low CI 24 | Up CI 24 | p val 24 | Diff 60 | Low CI 60 | Up CI 60 | p val 60 | Diff 120 | Low CI 120 | Up CI 120 | p val 120 |
-|-----|:-----|--------:|----------:|----------|---------:|--------:|----------:|----------|---------:|--------:|----------:|----------|----------|----------|-----------:|----------:|-----------|
-| u45 | rmst |  -0.024 |    -0.095 | 0.048    |    0.287 |  -0.120 |    -0.308 | 0.069    |    0.042 |  -1.120 |    -1.959 | -0.282   | 0        | -5.057   |     -7.659 |    -2.455 | 0         |
-| mid | rmst |  -0.057 |    -0.110 | -0.003   |    0.001 |  -0.171 |    -0.324 | -0.018   |    0.000 |  -0.890 |    -1.697 | -0.082   | 0        | -3.924   |     -6.566 |    -1.283 | 0         |
-| o50 | rmst |  -0.015 |    -0.051 | 0.021    |    0.178 |  -0.096 |    -0.188 | -0.005   |    0.001 |  -0.974 |    -1.296 | -0.653   | 0        | -4.056   |     -4.899 |    -3.213 | 0         |
+|-----|:-----|--------:|----------:|---------:|---------:|--------:|----------:|---------:|---------:|--------:|----------:|----------|---------:|----------|-----------:|----------:|-----------|
+| u45 | rmst |  -0.001 |    -0.093 |    0.091 |    0.976 |  -0.078 |    -0.296 |    0.140 |    0.251 |  -1.014 |    -1.871 | -0.157   |    0.000 | -4.833   |     -7.435 |    -2.230 | 0         |
+| mid | rmst |  -0.031 |    -0.114 |    0.051 |    0.223 |  -0.121 |    -0.318 |    0.077 |    0.051 |  -0.766 |    -1.629 | 0.097    |    0.005 | -3.681   |     -6.385 |    -0.976 | 0         |
+| o50 | rmst |   0.036 |    -0.011 |    0.084 |    0.015 |   0.006 |    -0.104 |    0.116 |    0.865 |  -0.720 |    -1.071 | -0.368   |    0.000 | -3.540   |     -4.420 |    -2.660 | 0         |
 
 ### 6.1.2 Regional
 
@@ -571,9 +600,9 @@ knitr::kable(regional_res_combined_css,digits=3)
 
 |     | col1 | Diff 12 | Low CI 12 | Up CI 12 | p val 12 | Diff 24 | Low CI 24 | Up CI 24 | p val 24 | Diff 60 | Low CI 60 | Up CI 60 | p val 60 | Diff 120 | Low CI 120 | Up CI 120 | p val 120 |
 |-----|:-----|---------|----------:|---------:|----------|---------|----------:|---------:|----------|---------|----------:|---------:|----------|---------:|-----------:|----------:|----------:|
-| u45 | rmst | 0.115   |     0.032 |    0.199 | 0        | 0.527   |     0.257 |    0.797 | 0        | 1.683   |     0.508 |    2.858 | 0        |    0.458 |     -2.710 |     3.626 |     0.644 |
-| mid | rmst | 0.099   |     0.008 |    0.189 | 0        | 0.421   |     0.137 |    0.705 | 0        | 1.793   |     0.514 |    3.072 | 0        |    1.914 |     -1.611 |     5.440 |     0.083 |
-| o50 | rmst | 0.225   |     0.185 |    0.266 | 0        | 0.777   |     0.668 |    0.886 | 0        | 2.431   |     2.040 |    2.822 | 0        |    2.710 |      1.728 |     3.692 |     0.000 |
+| u45 | rmst | 0.139   |     0.048 |    0.231 | 0        | 0.569   |     0.291 |    0.846 | 0        | 1.765   |     0.582 |    2.948 | 0        |    0.574 |     -2.602 |     3.750 |     0.564 |
+| mid | rmst | 0.133   |     0.027 |    0.240 | 0        | 0.489   |     0.185 |    0.793 | 0        | 1.947   |     0.647 |    3.246 | 0        |    2.196 |     -1.347 |     5.739 |     0.048 |
+| o50 | rmst | 0.336   |     0.285 |    0.387 | 0        | 0.982   |     0.859 |    1.106 | 0        | 2.875   |     2.468 |    3.282 | 0        |    3.533 |      2.542 |     4.524 |     0.000 |
 
 ### 6.1.3 Distant
 
@@ -583,9 +612,9 @@ knitr::kable(distant_res_combined_css,digits=3)
 
 |     | col1 | Diff 12 | Low CI 12 | Up CI 12 | p val 12 | Diff 24 | Low CI 24 | Up CI 24 | p val 24 | Diff 60 | Low CI 60 | Up CI 60 | p val 60 | Diff 120 | Low CI 120 | Up CI 120 | p val 120 |
 |-----|:-----|---------|----------:|---------:|----------|---------|----------:|---------:|----------|---------|----------:|---------:|----------|---------:|-----------:|----------:|-----------|
-| u45 | rmst | 0.593   |     0.290 |    0.896 | 0        | 2.105   |     1.345 |    2.865 | 0        | 5.518   |     3.472 |    7.564 | 0        |    7.320 |      3.235 |    11.405 | 0         |
-| mid | rmst | 0.826   |     0.486 |    1.165 | 0        | 2.678   |     1.862 |    3.495 | 0        | 6.705   |     4.631 |    8.780 | 0        |    9.283 |      5.361 |    13.205 | 0         |
-| o50 | rmst | 0.909   |     0.795 |    1.024 | 0        | 2.404   |     2.152 |    2.655 | 0        | 5.451   |     4.883 |    6.018 | 0        |    7.350 |      6.346 |     8.353 | 0         |
+| u45 | rmst | 0.630   |     0.298 |    0.963 | 0        | 2.132   |     1.348 |    2.916 | 0        | 5.499   |     3.460 |    7.538 | 0        |    7.286 |      3.257 |    11.314 | 0         |
+| mid | rmst | 1.005   |     0.631 |    1.378 | 0        | 2.938   |     2.098 |    3.779 | 0        | 7.039   |     4.988 |    9.090 | 0        |    9.692 |      5.866 |    13.518 | 0         |
+| o50 | rmst | 1.122   |     0.998 |    1.245 | 0        | 2.668   |     2.416 |    2.920 | 0        | 5.701   |     5.158 |    6.243 | 0        |    7.616 |      6.677 |     8.556 | 0         |
 
 <br>
 
@@ -598,10 +627,10 @@ knitr::kable(local_res_combined_os,digits=3)
 ```
 
 |     | col1 | Diff 12 | Low CI 12 | Up CI 12 | p val 12 | Diff 24 | Low CI 24 | Up CI 24 | p val 24 | Diff 60 | Low CI 60 | Up CI 60 | p val 60 | Diff 120 | Low CI 120 | Up CI 120 | p val 120 |
-|-----|:-----|--------:|----------:|----------|---------:|--------:|----------:|----------|---------:|--------:|----------:|----------|---------:|----------|-----------:|----------:|----------:|
-| u45 | rmst |   0.014 |    -0.075 | 0.103    |    0.658 |   0.015 |    -0.228 | 0.258    |    0.860 |  -0.508 |    -1.492 | 0.476    |    0.139 | -3.150   |     -5.997 |    -0.303 |     0.002 |
-| mid | rmst |  -0.071 |    -0.141 | -0.001   |    0.004 |  -0.244 |    -0.438 | -0.051   |    0.000 |  -1.175 |    -2.081 | -0.270   |    0.000 | -4.563   |     -7.383 |    -1.742 |     0.000 |
-| o50 | rmst |   0.048 |     0.003 | 0.092    |    0.002 |   0.119 |     0.007 | 0.231    |    0.002 |   0.354 |    -0.024 | 0.733    |    0.007 | 1.944    |      1.011 |     2.878 |     0.000 |
+|-----|:-----|--------:|----------:|---------:|---------:|--------:|----------:|---------:|---------:|--------:|----------:|----------|---------:|----------|-----------:|----------:|-----------|
+| u45 | rmst |   0.017 |    -0.084 |    0.117 |    0.637 |  -0.017 |    -0.263 |    0.228 |    0.838 |  -0.750 |    -1.678 | 0.178    |    0.021 | -3.787   |     -6.496 |    -1.077 | 0         |
+| mid | rmst |  -0.040 |    -0.149 |    0.069 |    0.291 |  -0.182 |    -0.436 |    0.071 |    0.040 |  -1.022 |    -2.010 | -0.034   |    0.003 | -4.260   |     -7.173 |    -1.346 | 0         |
+| o50 | rmst |   0.142 |     0.086 |    0.199 |    0.000 |   0.302 |     0.172 |    0.432 |    0.000 |   0.772 |     0.369 | 1.175    |    0.000 | 2.630    |      1.679 |     3.581 | 0         |
 
 ### 6.2.2 Regional
 
@@ -610,10 +639,10 @@ knitr::kable(regional_res_combined_os,digits=3)
 ```
 
 |     | col1 | Diff 12 | Low CI 12 | Up CI 12 | p val 12 | Diff 24 | Low CI 24 | Up CI 24 | p val 24 | Diff 60 | Low CI 60 | Up CI 60 | p val 60 | Diff 120 | Low CI 120 | Up CI 120 | p val 120 |
-|-----|:-----|---------|----------:|---------:|---------:|---------|----------:|---------:|----------|---------|----------:|---------:|----------|---------:|-----------:|----------:|----------:|
-| u45 | rmst | 0.191   |     0.100 |    0.282 |    0.000 | 0.724   |     0.449 |    0.999 | 0        | 2.252   |     1.136 |    3.369 | 0        |    1.831 |     -1.107 |     4.769 |     0.074 |
-| mid | rmst | 0.090   |     0.005 |    0.176 |    0.002 | 0.417   |     0.150 |    0.684 | 0        | 1.761   |     0.578 |    2.944 | 0        |    2.151 |     -1.074 |     5.376 |     0.056 |
-| o50 | rmst | 0.315   |     0.272 |    0.359 |    0.000 | 1.027   |     0.914 |    1.140 | 0        | 3.499   |     3.123 |    3.875 | 0        |    6.857 |      5.985 |     7.728 |     0.000 |
+|-----|:-----|---------|----------:|---------:|----------|---------|----------:|---------:|----------|---------|----------:|---------:|----------|---------:|-----------:|----------:|----------:|
+| u45 | rmst | 0.199   |     0.103 |    0.295 | 0        | 0.726   |     0.448 |    1.005 | 0        | 2.196   |     1.078 |    3.315 | 0        |    1.586 |     -1.351 |     4.523 |     0.122 |
+| mid | rmst | 0.138   |     0.033 |    0.243 | 0        | 0.509   |     0.217 |    0.800 | 0        | 1.967   |     0.759 |    3.176 | 0        |    2.523 |     -0.722 |     5.768 |     0.026 |
+| o50 | rmst | 0.471   |     0.417 |    0.526 | 0        | 1.309   |     1.182 |    1.436 | 0        | 4.064   |     3.675 |    4.453 | 0        |    7.754 |      6.881 |     8.627 |     0.000 |
 
 ### 6.2.3 Distant
 
@@ -623,9 +652,9 @@ knitr::kable(distant_res_combined_os,digits=3)
 
 |     | col1 | Diff 12 | Low CI 12 | Up CI 12 | p val 12 | Diff 24 | Low CI 24 | Up CI 24 | p val 24 | Diff 60 | Low CI 60 | Up CI 60 | p val 60 | Diff 120 | Low CI 120 | Up CI 120 | p val 120 |
 |-----|:-----|---------|----------:|---------:|----------|---------|----------:|---------:|----------|---------|----------:|---------:|----------|---------:|-----------:|----------:|-----------|
-| u45 | rmst | 0.604   |     0.328 |    0.881 | 0        | 2.127   |     1.442 |    2.811 | 0        | 5.672   |     3.887 |    7.457 | 0        |    7.490 |      4.017 |    10.963 | 0         |
-| mid | rmst | 0.823   |     0.517 |    1.130 | 0        | 2.693   |     1.962 |    3.425 | 0        | 6.735   |     4.919 |    8.552 | 0        |    9.219 |      5.880 |    12.559 | 0         |
-| o50 | rmst | 0.922   |     0.817 |    1.026 | 0        | 2.381   |     2.158 |    2.604 | 0        | 5.221   |     4.738 |    5.703 | 0        |    6.848 |      6.047 |     7.648 | 0         |
+| u45 | rmst | 0.632   |     0.330 |    0.935 | 0        | 2.134   |     1.429 |    2.840 | 0        | 5.615   |     3.836 |    7.394 | 0        |    7.404 |      3.979 |    10.829 | 0         |
+| mid | rmst | 1.046   |     0.707 |    1.386 | 0        | 3.019   |     2.265 |    3.774 | 0        | 7.157   |     5.364 |    8.950 | 0        |    9.731 |      6.482 |    12.980 | 0         |
+| o50 | rmst | 1.156   |     1.045 |    1.268 | 0        | 2.670   |     2.447 |    2.893 | 0        | 5.491   |     5.032 |    5.949 | 0        |    7.125 |      6.381 |     7.869 | 0         |
 
 <br><br>
 
@@ -684,7 +713,7 @@ make_plot <- function(plot_dat,fig_title){# takes in plot data generated from ma
 
 <br><br>
 
-# 8 CSS Plots
+## 7.1 CSS Plots
 
 ``` r
 # Local
@@ -730,12 +759,12 @@ ggarrange(a,b,c,d,e,f,g,h,i,common.legend = TRUE)
 ![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
 
 ``` r
-ggsave(plot=last_plot(),file="css_km.png",height=8, width=11.5)
+#ggsave(plot=last_plot(),file="css_km.png",height=8, width=11.5)
 ```
 
 <br><br>
 
-# 9 OS plots
+## 7.2 OS plots
 
 ``` r
 # Local
@@ -781,7 +810,7 @@ ggarrange(a,b,c,d,e,f,g,h,i,common.legend = TRUE)+ggtitle("OS")
 
 <br><br>
 
-# 10 Session Info
+# 8 Session Info
 
 ``` r
 sessionInfo()
@@ -810,30 +839,29 @@ sessionInfo()
     ## [13] ggplot2_3.4.0   survival_3.4-0  MASS_7.3-58.1   broom_1.0.3    
     ## 
     ## loaded via a namespace (and not attached):
-    ##  [1] fs_1.6.0            lubridate_1.9.1     bit64_4.0.5        
-    ##  [4] httr_1.4.4          tools_4.2.2         backports_1.4.1    
-    ##  [7] utf8_1.2.2          R6_2.5.1            DBI_1.1.3          
-    ## [10] colorspace_2.1-0    withr_2.5.0         tidyselect_1.2.0   
-    ## [13] gridExtra_2.3       bit_4.0.5           compiler_4.2.2     
-    ## [16] textshaping_0.3.6   cli_3.4.1           rvest_1.0.3        
-    ## [19] xml2_1.3.3          labeling_0.4.2      scales_1.2.1       
-    ## [22] survMisc_0.5.6      systemfonts_1.0.4   digest_0.6.31      
-    ## [25] rmarkdown_2.20      pkgconfig_2.0.3     htmltools_0.5.4    
-    ## [28] dbplyr_2.3.0        fastmap_1.1.0       highr_0.10         
-    ## [31] rlang_1.0.6         readxl_1.4.1        rstudioapi_0.14    
-    ## [34] generics_0.1.3      farver_2.1.1        zoo_1.8-11         
-    ## [37] jsonlite_1.8.4      vroom_1.6.1         car_3.1-1          
-    ## [40] googlesheets4_1.0.1 magrittr_2.0.3      Matrix_1.5-1       
-    ## [43] munsell_0.5.0       fansi_1.0.3         abind_1.4-5        
-    ## [46] lifecycle_1.0.3     stringi_1.7.12      yaml_2.3.7         
-    ## [49] carData_3.0-5       grid_4.2.2          parallel_4.2.2     
-    ## [52] crayon_1.5.2        lattice_0.20-45     haven_2.5.1        
-    ## [55] cowplot_1.1.1       splines_4.2.2       hms_1.1.2          
-    ## [58] knitr_1.42          pillar_1.8.1        ggsignif_0.6.4     
-    ## [61] reprex_2.0.2        glue_1.6.2          evaluate_0.20      
-    ## [64] data.table_1.14.6   modelr_0.1.10       vctrs_0.5.2        
-    ## [67] tzdb_0.3.0          cellranger_1.1.0    gtable_0.3.1       
-    ## [70] assertthat_0.2.1    xfun_0.37           xtable_1.8-4       
-    ## [73] rstatix_0.7.2       ragg_1.2.5          googledrive_2.0.0  
-    ## [76] gargle_1.3.0        KMsurv_0.1-5        timechange_0.2.0   
-    ## [79] ellipsis_0.3.2
+    ##  [1] httr_1.4.4          bit64_4.0.5         vroom_1.6.1        
+    ##  [4] jsonlite_1.8.4      splines_4.2.2       carData_3.0-5      
+    ##  [7] modelr_0.1.10       assertthat_0.2.1    highr_0.10         
+    ## [10] googlesheets4_1.0.1 cellranger_1.1.0    yaml_2.3.7         
+    ## [13] pillar_1.8.1        backports_1.4.1     lattice_0.20-45    
+    ## [16] glue_1.6.2          digest_0.6.31       ggsignif_0.6.4     
+    ## [19] rvest_1.0.3         colorspace_2.1-0    cowplot_1.1.1      
+    ## [22] htmltools_0.5.4     Matrix_1.5-1        pkgconfig_2.0.3    
+    ## [25] haven_2.5.1         xtable_1.8-4        scales_1.2.1       
+    ## [28] KMsurv_0.1-5        tzdb_0.3.0          timechange_0.2.0   
+    ## [31] googledrive_2.0.0   farver_2.1.1        generics_0.1.3     
+    ## [34] car_3.1-1           ellipsis_0.3.2      withr_2.5.0        
+    ## [37] cli_3.4.1           crayon_1.5.2        magrittr_2.0.3     
+    ## [40] readxl_1.4.1        evaluate_0.20       fs_1.6.0           
+    ## [43] fansi_1.0.3         rstatix_0.7.2       xml2_1.3.3         
+    ## [46] tools_4.2.2         data.table_1.14.6   hms_1.1.2          
+    ## [49] gargle_1.3.0        lifecycle_1.0.3     munsell_0.5.0      
+    ## [52] reprex_2.0.2        compiler_4.2.2      rlang_1.0.6        
+    ## [55] grid_4.2.2          rstudioapi_0.14     labeling_0.4.2     
+    ## [58] rmarkdown_2.20      gtable_0.3.1        abind_1.4-5        
+    ## [61] DBI_1.1.3           R6_2.5.1            gridExtra_2.3      
+    ## [64] zoo_1.8-11          lubridate_1.9.1     knitr_1.42         
+    ## [67] bit_4.0.5           fastmap_1.1.0       survMisc_0.5.6     
+    ## [70] utf8_1.2.2          stringi_1.7.12      parallel_4.2.2     
+    ## [73] vctrs_0.5.2         dbplyr_2.3.0        tidyselect_1.2.0   
+    ## [76] xfun_0.37

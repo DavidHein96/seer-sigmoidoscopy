@@ -23,6 +23,7 @@ library(survminer)
 library(tidyverse)
 library(survRM2)
 library(km.ci)
+library(readr)
 set.seed(2023)
 
 seer_data <- read_delim("seer_data.txt", delim = "\t", escape_double = FALSE, trim_ws = TRUE)
@@ -57,9 +58,9 @@ new_data <- new_data %>%filter(`Histologic Type ICD-O-3`==8140)
 new_data <- new_data %>% mutate(can_see_sigmoid = ifelse( `Primary Site` %in% c(186,187,199,209),1,0))
 
 # make new variable for 3 age groups
-new_data <- new_data %>% mutate(age_group = as.numeric(str_sub(`Age recode with single ages and 100+`,1,2)))
-new_data <- new_data %>% mutate(age_group_final = ifelse(age_group <45,'under45', 'over50'))%>%
-  mutate(age_group_final = ifelse(age_group <50 & age_group >= 45,'45-50',age_group_final))
+new_data <- new_data %>% mutate(age_numeric = as.numeric(str_extract(`Age recode with single ages and 100+`,"[:digit:]+")))
+new_data <- new_data %>% mutate(age_group_final = ifelse(age_numeric <45,'under45', 'over50'))%>%
+  mutate(age_group_final = ifelse(age_numeric <50 & age_numeric >= 45,'45-50',age_group_final))
 
 # Combine the two stages
 new_data<-new_data%>%mutate(new_stage = ifelse(`Summary stage 2000 (1998-2017)`=="Blank(s)",
@@ -115,7 +116,8 @@ new_data5<-new_data4 %>% dplyr::select(Sex,
                                        cancer_specific_status, 
                                        overall_status,
                                        `Survival months`,
-                                       `Primary Site`)%>%
+                                       `Primary Site`,
+                                       age_numeric)%>%
                           rename(survival_months=`Survival months`, primary_site = `Primary Site`)
 
 # set new factor levels, first level is the reference group
@@ -203,6 +205,7 @@ Makes KM curves using CSS, checks proportional hazards assumptions
 km_cansee<-survfit(Surv(survival_months, cancer_specific_status) ~ can_see_sigmoid, data = new_data5)
 plot(km_cansee,fun="cloglog")
 ggsurvplot(km_cansee,censor=FALSE) # BIGGEST TIME DEPENDANT!!!
+
 ```
 
 ## KM plots: Stage
@@ -258,7 +261,7 @@ ggsurvplot(km_site,censor=FALSE,ylim=c(0.5,1),xlim=c(0,100))
 # Survival Analysis 
 ```{r}
 # take out patients with 0 survival months
-new_data6<-new_data5%>%filter(survival_months>0)
+new_data6<-new_data5#%>%filter(survival_months>0)
 new_data7<- new_data6%>%select(survival_months,cancer_specific_status,can_see_sigmoid,age_group_final,new_stage,overall_status)
 
 # computes rmst with age group as a covariate, takes dataframe, vector of time points, and the stage as inputs, returns a data frame with results across time points in columns, rows are the stats we are looking at (add option to switch to OS)
@@ -325,6 +328,33 @@ compute_rmst_individually <- function(data,time_points,stage,css=TRUE){
   }
   rms_combined_res_final <- do.call(rbind,rms_combined_res)
   return(rms_combined_res_final)
+}
+
+
+# THIS FUNCTION DOESNT WORK JUST EXPERIMENTAL
+compute_rmst_all <- function(data, time_points, css=TRUE){
+  
+  data=new_data7
+  covs<-model.matrix(~age_group_final*can_see_sigmoid*new_stage,data=data)
+  covs<-covs[,-1]
+  rms_combined <- data.frame(col1="rmst")
+  
+  rms_temp <- rmst2(time=data$survival_months,status=data$cancer_specific_status,arm=data$can_see_sigmoid,covariates=covs,tau=60,alpha=0.05)
+  
+  for (t in time_points){
+    # calcs rmst with alpha corrected for 3 stages and number of time points 
+    if (css) {
+       rms_temp <- rmst2(time=data$survival_months,status=data$cancer_specific_status,arm=data$can_see_sigmoid,covariates=covs,tau=t,alpha=0.05/(3*length(time_points)) )
+    }else{
+       rms_temp <- rmst2(time=data$survival_months,status=data$overall_status,arm=data$can_see_sigmoid,covariates=covs,tau=t,alpha=0.05/(3*length(time_points)) )
+    }
+   
+    # round and add results to the data frame, each time point will be added as a block of columns 
+    rms_temp_res <- data.frame(rms_temp$RMST.difference.adjusted) %>% select(-se.coef., -z ) %>% mutate_all((function(x) round(x,digits=3))) %>% setNames( paste0('m_',t,"_",names(.)) )
+    rms_combined <- cbind(rms_combined,rms_temp_res)
+  }
+  return(rms_combined)
+  
 }
 
 local_res_combined_css <- compute_rmst_individually(new_data7,c(12,24,60,120),"Localized")
@@ -432,7 +462,7 @@ make_plot <- function(plot_dat,fig_title){# takes in plot data generated from ma
 
 
 
-# CSS Plots
+## CSS Plots
 ```{r,fig.width=9,fig.height=6}
 
 # Local
@@ -469,14 +499,14 @@ i<-make_plot(o50_dist_plot ,"I: >50 Distant")
 
 ggarrange(a,b,c,d,e,f,g,h,i,common.legend = TRUE)
 
-ggsave(plot=last_plot(),file="css_km.png",height=8, width=11.5)
+#ggsave(plot=last_plot(),file="css_km.png",height=8, width=11.5)
 
 ```
 <br><br>
 
 
 
-# OS plots
+## OS plots
 ```{r,fig.width=9,fig.height=6}
 # Local
 u45_local_plot <- make_plot_dat(new_data7, "under45", "Localized",FALSE)
