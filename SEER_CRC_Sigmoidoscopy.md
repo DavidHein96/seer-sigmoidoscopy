@@ -97,9 +97,10 @@ new_data<-seer_data%>%dplyr::select(Sex, `Year of diagnosis`,
                                 `Survival months flag`,
                                 `Vital status recode (study cutoff used)`,
                                 `Grade Clinical (2018+)`,
-                                `Histologic Type ICD-O-3`)
+                                `Histologic Type ICD-O-3`,
+                                `Site recode ICD-O-3/WHO 2008`)
 
-# need to take out 181 appendix, 260, 188, and 189 becuase location unknown
+# need to take out 181 appendix, 260, 188, and 189 because location unknown
 new_data <-new_data %>% filter( !`Primary Site` %in% c(260,188,189,181))
 
 # only adenocarcinoma
@@ -170,7 +171,8 @@ new_data5<-new_data4 %>% dplyr::select(Sex,
                                        overall_status,
                                        `Survival months`,
                                        `Primary Site`,
-                                       age_numeric)%>%
+                                       age_numeric,
+                                       `Site recode ICD-O-3/WHO 2008`)%>%
                           rename(survival_months=`Survival months`, primary_site = `Primary Site`)
 
 # set new factor levels, first level is the reference group
@@ -198,62 +200,38 @@ table(new_data5$final_grade,new_data5$year_of_diag)
 rm(new_data4)
 
 # Print out table 1
-table(new_data5$primary_site,new_data5$age_group_final,new_data5$new_stage)
-```
+#table(new_data5$primary_site,new_data5$age_group_final,new_data5$new_stage)
 
-    ## , ,  = Localized
-    ## 
-    ##      
-    ##       over50 under45 45-50
-    ##   180  13202     385   372
-    ##   182  13659     369   367
-    ##   183   3119      95    82
-    ##   184   5873     249   195
-    ##   185   1813     112    81
-    ##   186   3521     231   202
-    ##   187  17396     980  1048
-    ##   199   6522     411   416
-    ##   209  18196    1289  1441
-    ## 
-    ## , ,  = Regional
-    ## 
-    ##      
-    ##       over50 under45 45-50
-    ##   180  18461     761   714
-    ##   182  15970     767   610
-    ##   183   4169     270   166
-    ##   184   7993     502   397
-    ##   185   3237     260   202
-    ##   186   5213     530   405
-    ##   187  23042    2203  2041
-    ##   199   9709    1010   956
-    ##   209  22960    2815  2539
-    ## 
-    ## , ,  = Distant
-    ## 
-    ##      
-    ##       over50 under45 45-50
-    ##   180  10633     502   579
-    ##   182   7316     401   421
-    ##   183   2150     172   138
-    ##   184   3716     320   238
-    ##   185   1579     152   138
-    ##   186   2641     343   286
-    ##   187  14879    1795  1551
-    ##   199   6378     735   666
-    ##   209  12285    1575  1452
-
-``` r
 # Make a nice neat table 1
-# Make table 1, patient cohort characteristics
-#  Here filter_site set to FALSE returns all patient clinical data in a single df, only filtering out unknown MSI and unknown sex
-#clinical_overall <- filter_format_clinical_files(clinical_no_duplicates, crc_cancer_stage, remove_msi = FALSE, filter_site = FALSE) 
-#clinical_overall <- clinical_overall %>% filter(new_site %in% c("Colon","Rectum","Liver"))
-#clinical_overall <- clinical_overall %>% mutate(site2 = ifelse(new_site == "Liver", "Liver", "Colon/Rectum"))
-#table1(~ genetic_ancestry_group + age_at_onset_CRC + 
-#         early_onset + gender + assay_name_rna + stage2 + 
-#         grade + msi_status + new_site | site2, data = clinical_overall)
+tbl1 <- new_data5 %>% select(`Site recode ICD-O-3/WHO 2008`, new_stage, age_group_final)
+tbl1$age_group_final <- factor(tbl1$age_group_final, levels = c('under45','45-50','over50'))
+tbl1$`Site recode ICD-O-3/WHO 2008` <- factor(tbl1$`Site recode ICD-O-3/WHO 2008`, levels = c("Rectum", 
+                                                                                              "Rectosigmoid Junction",
+                                                                                              "Sigmoid Colon",
+                                                                                              "Descending Colon",
+                                                                                              "Splenic Flexure",
+                                                                                              "Transverse Colon",
+                                                                                              "Hepatic Flexure",
+                                                                                              "Ascending Colon",
+                                                                                              "Cecum"
+                                                                                              ))
+#table1(~ `Site recode ICD-O-3/WHO 2008` | new_stage*age_group_final, data = tbl1) this prints a pretty html version, to output in github doc we need to use kable
+knitr::kable(table1(~ `Site recode ICD-O-3/WHO 2008` | new_stage*age_group_final, data = tbl1))
 ```
+
+|                              | under45      | 45-50        | over50        | under45      | 45-50        | over50        | under45      | 45-50        | over50        | under45      | 45-50        | over50        |
+|------------------------------|:-------------|:-------------|:--------------|:-------------|:-------------|:--------------|:-------------|:-------------|:--------------|:-------------|:-------------|:--------------|
+|                              | (N=4121)     | (N=4204)     | (N=83301)     | (N=9118)     | (N=8030)     | (N=110754)    | (N=5995)     | (N=5469)     | (N=61577)     | (N=19234)    | (N=17703)    | (N=255632)    |
+| Site recode ICD-O-3/WHO 2008 |              |              |               |              |              |               |              |              |               |              |              |               |
+| Rectum                       | 1289 (31.3%) | 1441 (34.3%) | 18196 (21.8%) | 2815 (30.9%) | 2539 (31.6%) | 22960 (20.7%) | 1575 (26.3%) | 1452 (26.5%) | 12285 (20.0%) | 5679 (29.5%) | 5432 (30.7%) | 53441 (20.9%) |
+| Rectosigmoid Junction        | 411 (10.0%)  | 416 (9.9%)   | 6522 (7.8%)   | 1010 (11.1%) | 956 (11.9%)  | 9709 (8.8%)   | 735 (12.3%)  | 666 (12.2%)  | 6378 (10.4%)  | 2156 (11.2%) | 2038 (11.5%) | 22609 (8.8%)  |
+| Sigmoid Colon                | 980 (23.8%)  | 1048 (24.9%) | 17396 (20.9%) | 2203 (24.2%) | 2041 (25.4%) | 23042 (20.8%) | 1795 (29.9%) | 1551 (28.4%) | 14879 (24.2%) | 4978 (25.9%) | 4640 (26.2%) | 55317 (21.6%) |
+| Descending Colon             | 231 (5.6%)   | 202 (4.8%)   | 3521 (4.2%)   | 530 (5.8%)   | 405 (5.0%)   | 5213 (4.7%)   | 343 (5.7%)   | 286 (5.2%)   | 2641 (4.3%)   | 1104 (5.7%)  | 893 (5.0%)   | 11375 (4.4%)  |
+| Splenic Flexure              | 112 (2.7%)   | 81 (1.9%)    | 1813 (2.2%)   | 260 (2.9%)   | 202 (2.5%)   | 3237 (2.9%)   | 152 (2.5%)   | 138 (2.5%)   | 1579 (2.6%)   | 524 (2.7%)   | 421 (2.4%)   | 6629 (2.6%)   |
+| Transverse Colon             | 249 (6.0%)   | 195 (4.6%)   | 5873 (7.1%)   | 502 (5.5%)   | 397 (4.9%)   | 7993 (7.2%)   | 320 (5.3%)   | 238 (4.4%)   | 3716 (6.0%)   | 1071 (5.6%)  | 830 (4.7%)   | 17582 (6.9%)  |
+| Hepatic Flexure              | 95 (2.3%)    | 82 (2.0%)    | 3119 (3.7%)   | 270 (3.0%)   | 166 (2.1%)   | 4169 (3.8%)   | 172 (2.9%)   | 138 (2.5%)   | 2150 (3.5%)   | 537 (2.8%)   | 386 (2.2%)   | 9438 (3.7%)   |
+| Ascending Colon              | 369 (9.0%)   | 367 (8.7%)   | 13659 (16.4%) | 767 (8.4%)   | 610 (7.6%)   | 15970 (14.4%) | 401 (6.7%)   | 421 (7.7%)   | 7316 (11.9%)  | 1537 (8.0%)  | 1398 (7.9%)  | 36945 (14.5%) |
+| Cecum                        | 385 (9.3%)   | 372 (8.8%)   | 13202 (15.8%) | 761 (8.3%)   | 714 (8.9%)   | 18461 (16.7%) | 502 (8.4%)   | 579 (10.6%)  | 10633 (17.3%) | 1648 (8.6%)  | 1665 (9.4%)  | 42296 (16.5%) |
 
 <br>
 
@@ -270,7 +248,7 @@ sum_data <- new_data5 %>% group_by(age_numeric,new_stage) %>% summarize(sigcan=s
 sum_data$nocan <- 1-sum_data$sigcan
 sum_data <- pivot_longer(sum_data, cols = c(sigcan,nocan), names_to = "proptype", values_to = "proportion")
 ggplot(sum_data,aes( x = age_numeric, y = proportion, fill = proptype)) +
-  geom_bar(stat="identity",position="fill")+
+  geom_bar(stat="identity",position="fill",width=1.1)+
   facet_wrap(~new_stage,ncol=1) +
   theme_test() +
   labs(fill="Visualization on Sigmoidoscopy") +
@@ -287,12 +265,19 @@ ggplot(sum_data,aes( x = age_numeric, y = proportion, fill = proptype)) +
 
     ## Warning: Removed 86 rows containing missing values (`position_stack()`).
 
+    ## Warning: `position_stack()` requires non-overlapping x intervals
+    ## `position_stack()` requires non-overlapping x intervals
+    ## `position_stack()` requires non-overlapping x intervals
+
     ## Warning: Removed 12 rows containing missing values (`geom_bar()`).
 
 ![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
 
 ``` r
  # scale_fill_manual(values = c("#92c5de","#f4a582"))
+
+
+#ggsave(plot=last_plot(),file="bar_graph.png",heigh=4, width=6,dpi = "retina")
 ```
 
 <br>
@@ -717,533 +702,10 @@ knitr::kable(distant_res_combined_os,digits=3)
 # 8 KM Plots with better 95% CIs
 
 ``` r
-font_import()
-```
-
-    ## Importing fonts may take a few minutes, depending on the number of fonts and the speed of the system.
-    ## Continue? [y/n]
-
-    ## Exiting.
-
-``` r
-loadfonts(device = "win")
-```
-
-    ## Agency FB already registered with windowsFonts().
-
-    ## Algerian already registered with windowsFonts().
-
-    ## Arial Black already registered with windowsFonts().
-
-    ## Arial already registered with windowsFonts().
-
-    ## Arial Narrow already registered with windowsFonts().
-
-    ## Arial Rounded MT Bold already registered with windowsFonts().
-
-    ## Bahnschrift already registered with windowsFonts().
-
-    ## Baskerville Old Face already registered with windowsFonts().
-
-    ## Bauhaus 93 already registered with windowsFonts().
-
-    ## Bell MT already registered with windowsFonts().
-
-    ## Berlin Sans FB already registered with windowsFonts().
-
-    ## Berlin Sans FB Demi already registered with windowsFonts().
-
-    ## Bernard MT Condensed already registered with windowsFonts().
-
-    ## Blackadder ITC already registered with windowsFonts().
-
-    ## Bodoni MT already registered with windowsFonts().
-
-    ## Bodoni MT Black already registered with windowsFonts().
-
-    ## Bodoni MT Condensed already registered with windowsFonts().
-
-    ## Bodoni MT Poster Compressed already registered with windowsFonts().
-
-    ## Book Antiqua already registered with windowsFonts().
-
-    ## Bookman Old Style already registered with windowsFonts().
-
-    ## Bookshelf Symbol 7 already registered with windowsFonts().
-
-    ## Bradley Hand ITC already registered with windowsFonts().
-
-    ## Britannic Bold already registered with windowsFonts().
-
-    ## Broadway already registered with windowsFonts().
-
-    ## Brush Script MT already registered with windowsFonts().
-
-    ## Calibri already registered with windowsFonts().
-
-    ## Calibri Light already registered with windowsFonts().
-
-    ## Californian FB already registered with windowsFonts().
-
-    ## Calisto MT already registered with windowsFonts().
-
-    ## Cambria already registered with windowsFonts().
-
-    ## Candara already registered with windowsFonts().
-
-    ## Candara Light already registered with windowsFonts().
-
-    ## Cascadia Code already registered with windowsFonts().
-
-    ## Cascadia Mono already registered with windowsFonts().
-
-    ## Castellar already registered with windowsFonts().
-
-    ## Centaur already registered with windowsFonts().
-
-    ## Century already registered with windowsFonts().
-
-    ## Century Gothic already registered with windowsFonts().
-
-    ## Century Schoolbook already registered with windowsFonts().
-
-    ## Chiller already registered with windowsFonts().
-
-    ## Colonna MT already registered with windowsFonts().
-
-    ## Comic Sans MS already registered with windowsFonts().
-
-    ## Consolas already registered with windowsFonts().
-
-    ## Constantia already registered with windowsFonts().
-
-    ## Cooper Black already registered with windowsFonts().
-
-    ## Copperplate Gothic Bold already registered with windowsFonts().
-
-    ## Copperplate Gothic Light already registered with windowsFonts().
-
-    ## Corbel already registered with windowsFonts().
-
-    ## Corbel Light already registered with windowsFonts().
-
-    ## Courier New already registered with windowsFonts().
-
-    ## Curlz MT already registered with windowsFonts().
-
-    ## Dubai already registered with windowsFonts().
-
-    ## Dubai Light already registered with windowsFonts().
-
-    ## Dubai Medium already registered with windowsFonts().
-
-    ## Ebrima already registered with windowsFonts().
-
-    ## Edwardian Script ITC already registered with windowsFonts().
-
-    ## Elephant already registered with windowsFonts().
-
-    ## Engravers MT already registered with windowsFonts().
-
-    ## Eras Bold ITC already registered with windowsFonts().
-
-    ## Eras Demi ITC already registered with windowsFonts().
-
-    ## Eras Light ITC already registered with windowsFonts().
-
-    ## Eras Medium ITC already registered with windowsFonts().
-
-    ## Felix Titling already registered with windowsFonts().
-
-    ## Footlight MT Light already registered with windowsFonts().
-
-    ## Forte already registered with windowsFonts().
-
-    ## Franklin Gothic Book already registered with windowsFonts().
-
-    ## Franklin Gothic Demi already registered with windowsFonts().
-
-    ## Franklin Gothic Demi Cond already registered with windowsFonts().
-
-    ## Franklin Gothic Heavy already registered with windowsFonts().
-
-    ## Franklin Gothic Medium already registered with windowsFonts().
-
-    ## Franklin Gothic Medium Cond already registered with windowsFonts().
-
-    ## Freestyle Script already registered with windowsFonts().
-
-    ## French Script MT already registered with windowsFonts().
-
-    ## Gabriola already registered with windowsFonts().
-
-    ## Gadugi already registered with windowsFonts().
-
-    ## Garamond already registered with windowsFonts().
-
-    ## Georgia already registered with windowsFonts().
-
-    ## Gigi already registered with windowsFonts().
-
-    ## Gill Sans Ultra Bold already registered with windowsFonts().
-
-    ## Gill Sans Ultra Bold Condensed already registered with windowsFonts().
-
-    ## Gill Sans MT already registered with windowsFonts().
-
-    ## Gill Sans MT Condensed already registered with windowsFonts().
-
-    ## Gill Sans MT Ext Condensed Bold already registered with windowsFonts().
-
-    ## Gloucester MT Extra Condensed already registered with windowsFonts().
-
-    ## Goudy Old Style already registered with windowsFonts().
-
-    ## Goudy Stout already registered with windowsFonts().
-
-    ## Haettenschweiler already registered with windowsFonts().
-
-    ## Harlow Solid Italic already registered with windowsFonts().
-
-    ## Harrington already registered with windowsFonts().
-
-    ## High Tower Text already registered with windowsFonts().
-
-    ## HoloLens MDL2 Assets already registered with windowsFonts().
-
-    ## Impact already registered with windowsFonts().
-
-    ## Imprint MT Shadow already registered with windowsFonts().
-
-    ## Informal Roman already registered with windowsFonts().
-
-    ## Ink Free already registered with windowsFonts().
-
-    ## Javanese Text already registered with windowsFonts().
-
-    ## Jokerman already registered with windowsFonts().
-
-    ## Juice ITC already registered with windowsFonts().
-
-    ## Kristen ITC already registered with windowsFonts().
-
-    ## Kunstler Script already registered with windowsFonts().
-
-    ## Wide Latin already registered with windowsFonts().
-
-    ## Leelawadee UI already registered with windowsFonts().
-
-    ## Leelawadee UI Semilight already registered with windowsFonts().
-
-    ## Lucida Bright already registered with windowsFonts().
-
-    ## Lucida Calligraphy already registered with windowsFonts().
-
-    ## Lucida Console already registered with windowsFonts().
-
-    ## Lucida Fax already registered with windowsFonts().
-
-    ## Lucida Handwriting already registered with windowsFonts().
-
-    ## Lucida Sans already registered with windowsFonts().
-
-    ## Lucida Sans Typewriter already registered with windowsFonts().
-
-    ## Lucida Sans Unicode already registered with windowsFonts().
-
-    ## Magneto already registered with windowsFonts().
-
-    ## Maiandra GD already registered with windowsFonts().
-
-    ## Malgun Gothic already registered with windowsFonts().
-
-    ## Malgun Gothic Semilight already registered with windowsFonts().
-
-    ## Marlett already registered with windowsFonts().
-
-    ## Matura MT Script Capitals already registered with windowsFonts().
-
-    ## Microsoft Himalaya already registered with windowsFonts().
-
-    ## Microsoft Yi Baiti already registered with windowsFonts().
-
-    ## Microsoft New Tai Lue already registered with windowsFonts().
-
-    ## Microsoft PhagsPa already registered with windowsFonts().
-
-    ## Microsoft Sans Serif already registered with windowsFonts().
-
-    ## Microsoft Tai Le already registered with windowsFonts().
-
-    ## Mistral already registered with windowsFonts().
-
-    ## Modern No. 20 already registered with windowsFonts().
-
-    ## Mongolian Baiti already registered with windowsFonts().
-
-    ## Monotype Corsiva already registered with windowsFonts().
-
-    ## MS Outlook already registered with windowsFonts().
-
-    ## MS Reference Sans Serif already registered with windowsFonts().
-
-    ## MS Reference Specialty already registered with windowsFonts().
-
-    ## MT Extra already registered with windowsFonts().
-
-    ## MV Boli already registered with windowsFonts().
-
-    ## Myanmar Text already registered with windowsFonts().
-
-    ## Niagara Engraved already registered with windowsFonts().
-
-    ## Niagara Solid already registered with windowsFonts().
-
-    ## Nirmala UI already registered with windowsFonts().
-
-    ## Nirmala UI Semilight already registered with windowsFonts().
-
-    ## OCR A Extended already registered with windowsFonts().
-
-    ## Old English Text MT already registered with windowsFonts().
-
-    ## Onyx already registered with windowsFonts().
-
-    ## Palace Script MT already registered with windowsFonts().
-
-    ## Palatino Linotype already registered with windowsFonts().
-
-    ## Papyrus already registered with windowsFonts().
-
-    ## Parchment already registered with windowsFonts().
-
-    ## Perpetua already registered with windowsFonts().
-
-    ## Perpetua Titling MT already registered with windowsFonts().
-
-    ## Playbill already registered with windowsFonts().
-
-    ## Poor Richard already registered with windowsFonts().
-
-    ## Pristina already registered with windowsFonts().
-
-    ## Rage Italic already registered with windowsFonts().
-
-    ## Raleway Black already registered with windowsFonts().
-
-    ## Raleway already registered with windowsFonts().
-
-    ## Raleway ExtraBold already registered with windowsFonts().
-
-    ## Raleway ExtraLight already registered with windowsFonts().
-
-    ## Raleway Light already registered with windowsFonts().
-
-    ## Raleway Medium already registered with windowsFonts().
-
-    ## Raleway SemiBold already registered with windowsFonts().
-
-    ## Raleway Thin already registered with windowsFonts().
-
-    ## Ravie already registered with windowsFonts().
-
-    ## Rockwell already registered with windowsFonts().
-
-    ## Rockwell Condensed already registered with windowsFonts().
-
-    ## Rockwell Extra Bold already registered with windowsFonts().
-
-    ## Rubik Black already registered with windowsFonts().
-
-    ## Rubik already registered with windowsFonts().
-
-    ## Rubik ExtraBold already registered with windowsFonts().
-
-    ## Rubik Light already registered with windowsFonts().
-
-    ## Rubik Medium already registered with windowsFonts().
-
-    ## Rubik SemiBold already registered with windowsFonts().
-
-    ## Script MT Bold already registered with windowsFonts().
-
-    ## Segoe MDL2 Assets already registered with windowsFonts().
-
-    ## Segoe Print already registered with windowsFonts().
-
-    ## Segoe Script already registered with windowsFonts().
-
-    ## Segoe UI already registered with windowsFonts().
-
-    ## Segoe UI Light already registered with windowsFonts().
-
-    ## Segoe UI Semibold already registered with windowsFonts().
-
-    ## Segoe UI Semilight already registered with windowsFonts().
-
-    ## Segoe UI Black already registered with windowsFonts().
-
-    ## Segoe UI Emoji already registered with windowsFonts().
-
-    ## Segoe UI Historic already registered with windowsFonts().
-
-    ## Segoe UI Symbol already registered with windowsFonts().
-
-    ## Showcard Gothic already registered with windowsFonts().
-
-    ## SimSun-ExtB already registered with windowsFonts().
-
-    ## Snap ITC already registered with windowsFonts().
-
-    ## Stencil already registered with windowsFonts().
-
-    ## Sylfaen already registered with windowsFonts().
-
-    ## Symbol already registered with windowsFonts().
-
-    ## Tahoma already registered with windowsFonts().
-
-    ## Tempus Sans ITC already registered with windowsFonts().
-
-    ## Times New Roman already registered with windowsFonts().
-
-    ## Trebuchet MS already registered with windowsFonts().
-
-    ## Tw Cen MT already registered with windowsFonts().
-
-    ## Tw Cen MT Condensed already registered with windowsFonts().
-
-    ## Tw Cen MT Condensed Extra Bold already registered with windowsFonts().
-
-    ## Unispace already registered with windowsFonts().
-
-    ## Verdana already registered with windowsFonts().
-
-    ## Viner Hand ITC already registered with windowsFonts().
-
-    ## Vivaldi already registered with windowsFonts().
-
-    ## Vladimir Script already registered with windowsFonts().
-
-    ## Webdings already registered with windowsFonts().
-
-    ## Wingdings already registered with windowsFonts().
-
-    ## Wingdings 2 already registered with windowsFonts().
-
-    ## Wingdings 3 already registered with windowsFonts().
-
-    ## ZWAdobeF already registered with windowsFonts().
-
-``` r
-fonts()
-```
-
-    ##   [1] "Agency FB"                       "Algerian"                       
-    ##   [3] "Arial Black"                     "Arial"                          
-    ##   [5] "Arial Narrow"                    "Arial Rounded MT Bold"          
-    ##   [7] "Bahnschrift"                     "Baskerville Old Face"           
-    ##   [9] "Bauhaus 93"                      "Bell MT"                        
-    ##  [11] "Berlin Sans FB"                  "Berlin Sans FB Demi"            
-    ##  [13] "Bernard MT Condensed"            "Blackadder ITC"                 
-    ##  [15] "Bodoni MT"                       "Bodoni MT Black"                
-    ##  [17] "Bodoni MT Condensed"             "Bodoni MT Poster Compressed"    
-    ##  [19] "Book Antiqua"                    "Bookman Old Style"              
-    ##  [21] "Bookshelf Symbol 7"              "Bradley Hand ITC"               
-    ##  [23] "Britannic Bold"                  "Broadway"                       
-    ##  [25] "Brush Script MT"                 "Calibri"                        
-    ##  [27] "Calibri Light"                   "Californian FB"                 
-    ##  [29] "Calisto MT"                      "Cambria"                        
-    ##  [31] "Candara"                         "Candara Light"                  
-    ##  [33] "Cascadia Code"                   "Cascadia Mono"                  
-    ##  [35] "Castellar"                       "Centaur"                        
-    ##  [37] "Century"                         "Century Gothic"                 
-    ##  [39] "Century Schoolbook"              "Chiller"                        
-    ##  [41] "Colonna MT"                      "Comic Sans MS"                  
-    ##  [43] "Consolas"                        "Constantia"                     
-    ##  [45] "Cooper Black"                    "Copperplate Gothic Bold"        
-    ##  [47] "Copperplate Gothic Light"        "Corbel"                         
-    ##  [49] "Corbel Light"                    "Courier New"                    
-    ##  [51] "Curlz MT"                        "Dubai"                          
-    ##  [53] "Dubai Light"                     "Dubai Medium"                   
-    ##  [55] "Ebrima"                          "Edwardian Script ITC"           
-    ##  [57] "Elephant"                        "Engravers MT"                   
-    ##  [59] "Eras Bold ITC"                   "Eras Demi ITC"                  
-    ##  [61] "Eras Light ITC"                  "Eras Medium ITC"                
-    ##  [63] "Felix Titling"                   "Footlight MT Light"             
-    ##  [65] "Forte"                           "Franklin Gothic Book"           
-    ##  [67] "Franklin Gothic Demi"            "Franklin Gothic Demi Cond"      
-    ##  [69] "Franklin Gothic Heavy"           "Franklin Gothic Medium"         
-    ##  [71] "Franklin Gothic Medium Cond"     "Freestyle Script"               
-    ##  [73] "French Script MT"                "Gabriola"                       
-    ##  [75] "Gadugi"                          "Garamond"                       
-    ##  [77] "Georgia"                         "Gigi"                           
-    ##  [79] "Gill Sans Ultra Bold"            "Gill Sans Ultra Bold Condensed" 
-    ##  [81] "Gill Sans MT"                    "Gill Sans MT Condensed"         
-    ##  [83] "Gill Sans MT Ext Condensed Bold" "Gloucester MT Extra Condensed"  
-    ##  [85] "Goudy Old Style"                 "Goudy Stout"                    
-    ##  [87] "Haettenschweiler"                "Harlow Solid Italic"            
-    ##  [89] "Harrington"                      "High Tower Text"                
-    ##  [91] "HoloLens MDL2 Assets"            "Impact"                         
-    ##  [93] "Imprint MT Shadow"               "Informal Roman"                 
-    ##  [95] "Ink Free"                        "Javanese Text"                  
-    ##  [97] "Jokerman"                        "Juice ITC"                      
-    ##  [99] "Kristen ITC"                     "Kunstler Script"                
-    ## [101] "Wide Latin"                      "Leelawadee UI"                  
-    ## [103] "Leelawadee UI Semilight"         "Lucida Bright"                  
-    ## [105] "Lucida Calligraphy"              "Lucida Console"                 
-    ## [107] "Lucida Fax"                      "Lucida Handwriting"             
-    ## [109] "Lucida Sans"                     "Lucida Sans Typewriter"         
-    ## [111] "Lucida Sans Unicode"             "Magneto"                        
-    ## [113] "Maiandra GD"                     "Malgun Gothic"                  
-    ## [115] "Malgun Gothic Semilight"         "Marlett"                        
-    ## [117] "Matura MT Script Capitals"       "Microsoft Himalaya"             
-    ## [119] "Microsoft Yi Baiti"              "Microsoft New Tai Lue"          
-    ## [121] "Microsoft PhagsPa"               "Microsoft Sans Serif"           
-    ## [123] "Microsoft Tai Le"                "Mistral"                        
-    ## [125] "Modern No. 20"                   "Mongolian Baiti"                
-    ## [127] "Monotype Corsiva"                "MS Outlook"                     
-    ## [129] "MS Reference Sans Serif"         "MS Reference Specialty"         
-    ## [131] "MT Extra"                        "MV Boli"                        
-    ## [133] "Myanmar Text"                    "Niagara Engraved"               
-    ## [135] "Niagara Solid"                   "Nirmala UI"                     
-    ## [137] "Nirmala UI Semilight"            "OCR A Extended"                 
-    ## [139] "Old English Text MT"             "Onyx"                           
-    ## [141] "Palace Script MT"                "Palatino Linotype"              
-    ## [143] "Papyrus"                         "Parchment"                      
-    ## [145] "Perpetua"                        "Perpetua Titling MT"            
-    ## [147] "Playbill"                        "Poor Richard"                   
-    ## [149] "Pristina"                        "Rage Italic"                    
-    ## [151] "Raleway Black"                   "Raleway"                        
-    ## [153] "Raleway ExtraBold"               "Raleway ExtraLight"             
-    ## [155] "Raleway Light"                   "Raleway Medium"                 
-    ## [157] "Raleway SemiBold"                "Raleway Thin"                   
-    ## [159] "Ravie"                           "Rockwell"                       
-    ## [161] "Rockwell Condensed"              "Rockwell Extra Bold"            
-    ## [163] "Rubik Black"                     "Rubik"                          
-    ## [165] "Rubik ExtraBold"                 "Rubik Light"                    
-    ## [167] "Rubik Medium"                    "Rubik SemiBold"                 
-    ## [169] "Script MT Bold"                  "Segoe MDL2 Assets"              
-    ## [171] "Segoe Print"                     "Segoe Script"                   
-    ## [173] "Segoe UI"                        "Segoe UI Light"                 
-    ## [175] "Segoe UI Semibold"               "Segoe UI Semilight"             
-    ## [177] "Segoe UI Black"                  "Segoe UI Emoji"                 
-    ## [179] "Segoe UI Historic"               "Segoe UI Symbol"                
-    ## [181] "Showcard Gothic"                 "SimSun-ExtB"                    
-    ## [183] "Snap ITC"                        "Stencil"                        
-    ## [185] "Sylfaen"                         "Symbol"                         
-    ## [187] "Tahoma"                          "Tempus Sans ITC"                
-    ## [189] "Times New Roman"                 "Trebuchet MS"                   
-    ## [191] "Tw Cen MT"                       "Tw Cen MT Condensed"            
-    ## [193] "Tw Cen MT Condensed Extra Bold"  "Unispace"                       
-    ## [195] "Verdana"                         "Viner Hand ITC"                 
-    ## [197] "Vivaldi"                         "Vladimir Script"                
-    ## [199] "Webdings"                        "Wingdings"                      
-    ## [201] "Wingdings 2"                     "Wingdings 3"                    
-    ## [203] "ZWAdobeF"
-
-``` r
-options(device = "windows")
+#font_import()
+#loadfonts(device = "win")
+#fonts()
+#options(device = "windows")
 
 # makes a KM fit and calcs logep 95% CIs, returns the data for use with ggplot. Takes full dataset, age group and stage as strings, TRUE for CSS and FALSE for OS
 make_plot_dat <- function(data_set, age_grp, stage, css = TRUE){
@@ -1287,8 +749,8 @@ make_plot <- function(plot_dat,fig_title){# takes in plot data generated from ma
     theme(
       plot.title = element_text(size=10),
       axis.title = element_blank(),
-      panel.grid.major.x = element_line(linewidth=0.2,linetype = 3),
-      text = element_text(family = "Calibri"))+
+      panel.grid.major.x = element_line(linewidth=0.2,linetype = 3)
+      )+
     # x axis breaks at 2,5,10, and 15 years
     scale_x_continuous(limits=c(0,240),breaks=c(0,24,60,120,180),labels=c("0","2","5","10","15"))+
     labs(fill="Tumor Location",color="Tumor Location")+
@@ -1297,6 +759,8 @@ make_plot <- function(plot_dat,fig_title){# takes in plot data generated from ma
     
   return(p)
 }
+
+#text = element_text(family = "Calibri")
 ```
 
 <br><br>
@@ -1338,48 +802,6 @@ i_css<-make_plot(o50_dist_plot_css ,"I: 50+ Distant")
 
 ggarrange(a_css,b_css,c_css,d_css,e_css,f_css,g_css,h_css,i_css, common.legend = TRUE, legend = "bottom")
 ```
-
-    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font metrics
-    ## unknown for character 0x4d
-
-    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font width
-    ## unknown for character 0x67
-
-    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font width
-    ## unknown for character 0x6a
-
-    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font width
-    ## unknown for character 0x70
-
-    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font width
-    ## unknown for character 0x71
-
-    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font width
-    ## unknown for character 0x79
-
-    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font width
-    ## unknown for character 0x51
-
-    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font metrics
-    ## unknown for character 0x4d
-
-    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font width
-    ## unknown for character 0x67
-
-    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font width
-    ## unknown for character 0x6a
-
-    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font width
-    ## unknown for character 0x70
-
-    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font width
-    ## unknown for character 0x71
-
-    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font width
-    ## unknown for character 0x79
-
-    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font width
-    ## unknown for character 0x51
 
 ![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
 

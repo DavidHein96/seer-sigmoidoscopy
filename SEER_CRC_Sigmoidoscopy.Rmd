@@ -48,7 +48,8 @@ new_data<-seer_data%>%dplyr::select(Sex, `Year of diagnosis`,
                                 `Survival months flag`,
                                 `Vital status recode (study cutoff used)`,
                                 `Grade Clinical (2018+)`,
-                                `Histologic Type ICD-O-3`)
+                                `Histologic Type ICD-O-3`,
+                                `Site recode ICD-O-3/WHO 2008`)
 
 # need to take out 181 appendix, 260, 188, and 189 because location unknown
 new_data <-new_data %>% filter( !`Primary Site` %in% c(260,188,189,181))
@@ -119,7 +120,8 @@ new_data5<-new_data4 %>% dplyr::select(Sex,
                                        overall_status,
                                        `Survival months`,
                                        `Primary Site`,
-                                       age_numeric)%>%
+                                       age_numeric,
+                                       `Site recode ICD-O-3/WHO 2008`)%>%
                           rename(survival_months=`Survival months`, primary_site = `Primary Site`)
 
 # set new factor levels, first level is the reference group
@@ -137,17 +139,24 @@ table(new_data5$final_grade,new_data5$year_of_diag)
 rm(new_data4)
 
 # Print out table 1
-table(new_data5$primary_site,new_data5$age_group_final,new_data5$new_stage)
+#table(new_data5$primary_site,new_data5$age_group_final,new_data5$new_stage)
 
 # Make a nice neat table 1
-# Make table 1, patient cohort characteristics
-#  Here filter_site set to FALSE returns all patient clinical data in a single df, only filtering out unknown MSI and unknown sex
-#clinical_overall <- filter_format_clinical_files(clinical_no_duplicates, crc_cancer_stage, remove_msi = FALSE, filter_site = FALSE) 
-#clinical_overall <- clinical_overall %>% filter(new_site %in% c("Colon","Rectum","Liver"))
-#clinical_overall <- clinical_overall %>% mutate(site2 = ifelse(new_site == "Liver", "Liver", "Colon/Rectum"))
-#table1(~ genetic_ancestry_group + age_at_onset_CRC + 
-#         early_onset + gender + assay_name_rna + stage2 + 
-#         grade + msi_status + new_site | site2, data = clinical_overall)
+tbl1 <- new_data5 %>% select(`Site recode ICD-O-3/WHO 2008`, new_stage, age_group_final)
+tbl1$age_group_final <- factor(tbl1$age_group_final, levels = c('under45','45-50','over50'))
+tbl1$`Site recode ICD-O-3/WHO 2008` <- factor(tbl1$`Site recode ICD-O-3/WHO 2008`, levels = c("Rectum", 
+                                                                                              "Rectosigmoid Junction",
+                                                                                              "Sigmoid Colon",
+                                                                                              "Descending Colon",
+                                                                                              "Splenic Flexure",
+                                                                                              "Transverse Colon",
+                                                                                              "Hepatic Flexure",
+                                                                                              "Ascending Colon",
+                                                                                              "Cecum"
+                                                                                              ))
+#table1(~ `Site recode ICD-O-3/WHO 2008` | new_stage*age_group_final, data = tbl1) this prints a pretty html version, to output in github doc we need to use kable
+knitr::kable(table1(~ `Site recode ICD-O-3/WHO 2008` | new_stage*age_group_final, data = tbl1))
+
 ```
 <br>
 
@@ -445,10 +454,10 @@ knitr::kable(distant_res_combined_os,digits=3)
 # KM Plots with better 95% CIs
 ```{r}
 
-font_import()
-loadfonts(device = "win")
-fonts()
-options(device = "windows")
+#font_import()
+#loadfonts(device = "win")
+#fonts()
+#options(device = "windows")
 
 # makes a KM fit and calcs logep 95% CIs, returns the data for use with ggplot. Takes full dataset, age group and stage as strings, TRUE for CSS and FALSE for OS
 make_plot_dat <- function(data_set, age_grp, stage, css = TRUE){
@@ -492,8 +501,8 @@ make_plot <- function(plot_dat,fig_title){# takes in plot data generated from ma
     theme(
       plot.title = element_text(size=10),
       axis.title = element_blank(),
-      panel.grid.major.x = element_line(linewidth=0.2,linetype = 3),
-      text = element_text(family = "Calibri"))+
+      panel.grid.major.x = element_line(linewidth=0.2,linetype = 3)
+      )+
     # x axis breaks at 2,5,10, and 15 years
     scale_x_continuous(limits=c(0,240),breaks=c(0,24,60,120,180),labels=c("0","2","5","10","15"))+
     labs(fill="Tumor Location",color="Tumor Location")+
@@ -503,6 +512,7 @@ make_plot <- function(plot_dat,fig_title){# takes in plot data generated from ma
   return(p)
 }
 
+#text = element_text(family = "Calibri")
 ```
 <br><br>
 
