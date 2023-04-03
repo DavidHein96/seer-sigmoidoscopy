@@ -1,61 +1,63 @@
 SEER Sigmoidoscopy Project
 ================
 <david.hein@utsouthwestern.edu>
-2023-03-09
+2023-04-03
 
 - <a href="#1-load-packages-and-raw-data"
   id="toc-1-load-packages-and-raw-data">1 Load packages and raw data</a>
 - <a href="#2-data-cleaning" id="toc-2-data-cleaning">2 Data cleaning</a>
 - <a href="#3-setting-reference-groups"
   id="toc-3-setting-reference-groups">3 Setting reference groups</a>
-- <a href="#4-logistic-regression" id="toc-4-logistic-regression">4
+- <a href="#4-bar-graph-figure" id="toc-4-bar-graph-figure">4 Bar graph
+  figure</a>
+- <a href="#5-logistic-regression" id="toc-5-logistic-regression">5
   Logistic Regression</a>
-  - <a href="#41-logistic-results-sex" id="toc-41-logistic-results-sex">4.1
+  - <a href="#51-logistic-results-sex" id="toc-51-logistic-results-sex">5.1
     Logistic results: sex</a>
-  - <a href="#42-logistic-results-age" id="toc-42-logistic-results-age">4.2
+  - <a href="#52-logistic-results-age" id="toc-52-logistic-results-age">5.2
     Logistic results: age</a>
-  - <a href="#43-logistic-results-stage"
-    id="toc-43-logistic-results-stage">4.3 Logistic results: stage</a>
-  - <a href="#44-logistic-results-year"
-    id="toc-44-logistic-results-year">4.4 Logistic results: year</a>
-  - <a href="#45-logistic-results-race"
-    id="toc-45-logistic-results-race">4.5 Logistic results: race</a>
-  - <a href="#46-logistic-results-multivariate"
-    id="toc-46-logistic-results-multivariate">4.6 Logistic results:
+  - <a href="#53-logistic-results-stage"
+    id="toc-53-logistic-results-stage">5.3 Logistic results: stage</a>
+  - <a href="#54-logistic-results-year"
+    id="toc-54-logistic-results-year">5.4 Logistic results: year</a>
+  - <a href="#55-logistic-results-race"
+    id="toc-55-logistic-results-race">5.5 Logistic results: race</a>
+  - <a href="#56-logistic-results-multivariate"
+    id="toc-56-logistic-results-multivariate">5.6 Logistic results:
     multivariate</a>
-- <a href="#5-survival-exploration-wcss"
-  id="toc-5-survival-exploration-wcss">5 Survival exploration w/CSS</a>
-  - <a href="#51-km-plots-can-see-on-sigmoidoscopy"
-    id="toc-51-km-plots-can-see-on-sigmoidoscopy">5.1 KM plots: Can see on
+- <a href="#6-survival-exploration-wcss"
+  id="toc-6-survival-exploration-wcss">6 Survival exploration w/CSS</a>
+  - <a href="#61-km-plots-can-see-on-sigmoidoscopy"
+    id="toc-61-km-plots-can-see-on-sigmoidoscopy">6.1 KM plots: Can see on
     sigmoidoscopy</a>
-  - <a href="#52-km-plots-stage" id="toc-52-km-plots-stage">5.2 KM plots:
+  - <a href="#62-km-plots-stage" id="toc-62-km-plots-stage">6.2 KM plots:
     Stage</a>
-  - <a href="#53-km-plots-year-of-diag"
-    id="toc-53-km-plots-year-of-diag">5.3 KM plots: year of diag</a>
-  - <a href="#54-km-plots-sex" id="toc-54-km-plots-sex">5.4 KM plots:
+  - <a href="#63-km-plots-year-of-diag"
+    id="toc-63-km-plots-year-of-diag">6.3 KM plots: year of diag</a>
+  - <a href="#64-km-plots-sex" id="toc-64-km-plots-sex">6.4 KM plots:
     sex</a>
-  - <a href="#55-km-plots-age-group" id="toc-55-km-plots-age-group">5.5 KM
+  - <a href="#65-km-plots-age-group" id="toc-65-km-plots-age-group">6.5 KM
     plots: age group</a>
-  - <a href="#56-km-plots-raceeth" id="toc-56-km-plots-raceeth">5.6 KM
+  - <a href="#66-km-plots-raceeth" id="toc-66-km-plots-raceeth">6.6 KM
     plots: race/eth</a>
-  - <a href="#57-km-plots-site" id="toc-57-km-plots-site">5.7 KM plots:
+  - <a href="#67-km-plots-site" id="toc-67-km-plots-site">6.7 KM plots:
     Site</a>
-- <a href="#6-survival-analysis" id="toc-6-survival-analysis">6 Survival
+- <a href="#7-survival-analysis" id="toc-7-survival-analysis">7 Survival
   Analysis</a>
-  - <a href="#61-css" id="toc-61-css">6.1 CSS</a>
-    - <a href="#611-local" id="toc-611-local">6.1.1 Local</a>
-    - <a href="#612-regional" id="toc-612-regional">6.1.2 Regional</a>
-    - <a href="#613-distant" id="toc-613-distant">6.1.3 Distant</a>
-  - <a href="#62-os" id="toc-62-os">6.2 OS</a>
-    - <a href="#621-local" id="toc-621-local">6.2.1 Local</a>
-    - <a href="#622-regional" id="toc-622-regional">6.2.2 Regional</a>
-    - <a href="#623-distant" id="toc-623-distant">6.2.3 Distant</a>
-- <a href="#7-km-plots-with-better-95-cis"
-  id="toc-7-km-plots-with-better-95-cis">7 KM Plots with better 95%
+  - <a href="#71-css" id="toc-71-css">7.1 CSS</a>
+    - <a href="#711-local" id="toc-711-local">7.1.1 Local</a>
+    - <a href="#712-regional" id="toc-712-regional">7.1.2 Regional</a>
+    - <a href="#713-distant" id="toc-713-distant">7.1.3 Distant</a>
+  - <a href="#72-os" id="toc-72-os">7.2 OS</a>
+    - <a href="#721-local" id="toc-721-local">7.2.1 Local</a>
+    - <a href="#722-regional" id="toc-722-regional">7.2.2 Regional</a>
+    - <a href="#723-distant" id="toc-723-distant">7.2.3 Distant</a>
+- <a href="#8-km-plots-with-better-95-cis"
+  id="toc-8-km-plots-with-better-95-cis">8 KM Plots with better 95%
   CIs</a>
-  - <a href="#71-css-plots" id="toc-71-css-plots">7.1 CSS Plots</a>
-  - <a href="#72-os-plots" id="toc-72-os-plots">7.2 OS plots</a>
-- <a href="#8-session-info" id="toc-8-session-info">8 Session Info</a>
+  - <a href="#81-css-plots" id="toc-81-css-plots">8.1 CSS Plots</a>
+  - <a href="#82-os-plots" id="toc-82-os-plots">8.2 OS plots</a>
+- <a href="#9-session-info" id="toc-9-session-info">9 Session Info</a>
 
 <br>
 
@@ -70,6 +72,8 @@ library(tidyverse)
 library(survRM2)
 library(km.ci)
 library(readr)
+library(table1)
+library(extrafont)
 set.seed(2023)
 
 seer_data <- read_delim("seer_data.txt", delim = "\t", escape_double = FALSE, trim_ws = TRUE)
@@ -239,9 +243,61 @@ table(new_data5$primary_site,new_data5$age_group_final,new_data5$new_stage)
     ##   199   6378     735   666
     ##   209  12285    1575  1452
 
+``` r
+# Make a nice neat table 1
+# Make table 1, patient cohort characteristics
+#  Here filter_site set to FALSE returns all patient clinical data in a single df, only filtering out unknown MSI and unknown sex
+#clinical_overall <- filter_format_clinical_files(clinical_no_duplicates, crc_cancer_stage, remove_msi = FALSE, filter_site = FALSE) 
+#clinical_overall <- clinical_overall %>% filter(new_site %in% c("Colon","Rectum","Liver"))
+#clinical_overall <- clinical_overall %>% mutate(site2 = ifelse(new_site == "Liver", "Liver", "Colon/Rectum"))
+#table1(~ genetic_ancestry_group + age_at_onset_CRC + 
+#         early_onset + gender + assay_name_rna + stage2 + 
+#         grade + msi_status + new_site | site2, data = clinical_overall)
+```
+
 <br>
 
-# 4 Logistic Regression
+# 4 Bar graph figure
+
+``` r
+sum_data <- new_data5 %>% group_by(age_numeric,new_stage) %>% summarize(sigcan=sum(can_see_sigmoid)/n())
+```
+
+    ## `summarise()` has grouped output by 'age_numeric'. You can override using the
+    ## `.groups` argument.
+
+``` r
+sum_data$nocan <- 1-sum_data$sigcan
+sum_data <- pivot_longer(sum_data, cols = c(sigcan,nocan), names_to = "proptype", values_to = "proportion")
+ggplot(sum_data,aes( x = age_numeric, y = proportion, fill = proptype)) +
+  geom_bar(stat="identity",position="fill")+
+  facet_wrap(~new_stage,ncol=1) +
+  theme_test() +
+  labs(fill="Visualization on Sigmoidoscopy") +
+  scale_fill_manual(labels=c("Can NOT be visualized","Can be visualized"), 
+                      values=c("#f4a582","#92c5de")) +
+  ylab("Proportion of Total Cases") + xlab("Age at diagnosis") +
+  scale_x_continuous(limits=c(18,90),breaks=c(20,30,40,45,50,60,70,80)) +
+  geom_vline(aes(xintercept=44.5), color="black", linetype="dashed",size=0.4) +
+  geom_vline(aes(xintercept=49.5), color="black", linetype="dashed",size=0.4) # +
+```
+
+    ## Warning: Using `size` aesthetic for lines was deprecated in ggplot2 3.4.0.
+    ## ℹ Please use `linewidth` instead.
+
+    ## Warning: Removed 86 rows containing missing values (`position_stack()`).
+
+    ## Warning: Removed 12 rows containing missing values (`geom_bar()`).
+
+![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+
+``` r
+ # scale_fill_manual(values = c("#92c5de","#f4a582"))
+```
+
+<br>
+
+# 5 Logistic Regression
 
 Calculates odds of tumor in location seen on sigmoidoscopy, first
 univariate then multivariate
@@ -271,7 +327,7 @@ multi_log<-tidy(glm(can_see_sigmoid~race_eth+Sex+age_group_final+new_stage+year_
 
 <br>
 
-## 4.1 Logistic results: sex
+## 5.1 Logistic results: sex
 
 ``` r
 knitr::kable(sex_log,digits=2)
@@ -282,7 +338,7 @@ knitr::kable(sex_log,digits=2)
 | (Intercept) |     1.11 |      0.01 |     19.11 |       0 |     1.10 |      1.12 |
 | SexMale     |     1.54 |      0.01 |     57.05 |       0 |     1.51 |      1.56 |
 
-## 4.2 Logistic results: age
+## 5.2 Logistic results: age
 
 ``` r
 knitr::kable(age_log,digits=2)
@@ -294,7 +350,7 @@ knitr::kable(age_log,digits=2)
 | age_group_finalunder45 |     2.07 |      0.02 |     43.81 |       0 |     2.00 |      2.14 |
 | age_group_final45-50   |     2.19 |      0.02 |     44.79 |       0 |     2.11 |      2.26 |
 
-## 4.3 Logistic results: stage
+## 5.3 Logistic results: stage
 
 ``` r
 knitr::kable(stage_log,digits=2)
@@ -306,7 +362,7 @@ knitr::kable(stage_log,digits=2)
 | new_stageRegional |     1.04 |      0.01 |      4.82 |       0 |     1.03 |      1.06 |
 | new_stageDistant  |     1.21 |      0.01 |     19.09 |       0 |     1.19 |      1.24 |
 
-## 4.4 Logistic results: year
+## 5.4 Logistic results: year
 
 ``` r
 knitr::kable(year_log,digits=2)
@@ -319,7 +375,7 @@ knitr::kable(year_log,digits=2)
 | year_of_diagyod3 |     1.03 |      0.01 |      2.72 |    0.01 |     1.01 |      1.05 |
 | year_of_diagyod4 |     1.08 |      0.01 |      7.77 |    0.00 |     1.06 |      1.11 |
 
-## 4.5 Logistic results: race
+## 5.5 Logistic results: race
 
 ``` r
 knitr::kable(race_log,digits=2)
@@ -334,7 +390,7 @@ knitr::kable(race_log,digits=2)
 | race_ethNon-Hispanic Black                         |     0.80 |      0.01 |    -18.41 |       0 |     0.78 |      0.82 |
 | race_ethNon-Hispanic Unknown Race                  |     1.39 |      0.07 |      4.82 |       0 |     1.22 |      1.59 |
 
-## 4.6 Logistic results: multivariate
+## 5.6 Logistic results: multivariate
 
 ``` r
 knitr::kable(multi_log,digits=2)
@@ -359,11 +415,11 @@ knitr::kable(multi_log,digits=2)
 
 <br>
 
-# 5 Survival exploration w/CSS
+# 6 Survival exploration w/CSS
 
 Makes KM curves using CSS, checks proportional hazards assumptions
 
-## 5.1 KM plots: Can see on sigmoidoscopy
+## 6.1 KM plots: Can see on sigmoidoscopy
 
 ``` r
 # CAN SEE
@@ -372,9 +428,9 @@ plot(km_cansee,fun="cloglog")
 ggsurvplot(km_cansee,censor=FALSE) # BIGGEST TIME DEPENDANT!!!
 ```
 
-![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-11-2.png)<!-- -->
+![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-12-2.png)<!-- -->
 
-## 5.2 KM plots: Stage
+## 6.2 KM plots: Stage
 
 ``` r
 # STAGE
@@ -382,9 +438,9 @@ km_new_stage<-survfit(Surv(survival_months, cancer_specific_status) ~new_stage, 
 plot(km_new_stage,fun="cloglog")
 ```
 
-![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
-## 5.3 KM plots: year of diag
+## 6.3 KM plots: year of diag
 
 ``` r
 # YEAR OF DIAG
@@ -392,15 +448,15 @@ km_year_of_diag<-survfit(Surv(survival_months, cancer_specific_status) ~ year_of
 ggsurvplot(km_year_of_diag,censor=FALSE)
 ```
 
-![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
 ``` r
 plot(km_year_of_diag,fun="cloglog")
 ```
 
-![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-13-2.png)<!-- -->
+![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-14-2.png)<!-- -->
 
-## 5.4 KM plots: sex
+## 6.4 KM plots: sex
 
 ``` r
 # SEX
@@ -408,15 +464,15 @@ km_Sex<-survfit(Surv(survival_months, cancer_specific_status) ~ Sex, data = new_
 ggsurvplot(km_Sex,censor=FALSE)
 ```
 
-![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
 
 ``` r
 plot(km_Sex,fun="cloglog") # lines cross but tiny
 ```
 
-![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-14-2.png)<!-- -->
+![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-15-2.png)<!-- -->
 
-## 5.5 KM plots: age group
+## 6.5 KM plots: age group
 
 ``` r
 # AGE GROUP
@@ -424,15 +480,15 @@ km_age_group_final<-survfit(Surv(survival_months, cancer_specific_status) ~ age_
 ggsurvplot(km_age_group_final,censor=FALSE) # lines cross but tiny
 ```
 
-![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
 
 ``` r
 plot(km_age_group_final,fun="cloglog") 
 ```
 
-![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-15-2.png)<!-- -->
+![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-16-2.png)<!-- -->
 
-## 5.6 KM plots: race/eth
+## 6.6 KM plots: race/eth
 
 ``` r
 # RACE ETH
@@ -440,15 +496,15 @@ km_race_eth<-survfit(Surv(survival_months, cancer_specific_status) ~ race_eth, d
 ggsurvplot(km_race_eth,censor=FALSE) # lines cross but insignificant 
 ```
 
-![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
 
 ``` r
 plot(km_race_eth,fun="cloglog") 
 ```
 
-![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-16-2.png)<!-- -->
+![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-17-2.png)<!-- -->
 
-## 5.7 KM plots: Site
+## 6.7 KM plots: Site
 
 ``` r
 # SITE (this is just can see sigmoid with more definition)
@@ -459,7 +515,7 @@ ggsurvplot(km_site,censor=FALSE,ylim=c(0.5,1),xlim=c(0,100))
     ## Warning: Removed 320 rows containing missing values (`geom_step()`).
     ## Removed 320 rows containing missing values (`geom_step()`).
 
-![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
 
 ``` r
 #table(new_data5$primary_site)
@@ -467,10 +523,10 @@ ggsurvplot(km_site,censor=FALSE,ylim=c(0.5,1),xlim=c(0,100))
 
 <br>
 
-# 6 Survival Analysis
+# 7 Survival Analysis
 
 ``` r
-# take out patients with 0 survival months
+# Make sure to not take out the 0 month patients here!
 new_data6<-new_data5#%>%filter(survival_months>0)
 new_data7<- new_data6%>%select(survival_months,cancer_specific_status,can_see_sigmoid,age_group_final,new_stage,overall_status)
 
@@ -578,9 +634,9 @@ distant_res_combined_os <- compute_rmst_individually(new_data7,c(12,24,60,120),"
 
 <br>
 
-## 6.1 CSS
+## 7.1 CSS
 
-### 6.1.1 Local
+### 7.1.1 Local
 
 ``` r
 knitr::kable(local_res_combined_css,digits=3)
@@ -592,7 +648,7 @@ knitr::kable(local_res_combined_css,digits=3)
 | mid | rmst |  -0.031 |    -0.114 |    0.051 |    0.223 |  -0.121 |    -0.318 |    0.077 |    0.051 |  -0.766 |    -1.629 | 0.097    |    0.005 | -3.681   |     -6.385 |    -0.976 | 0         |
 | o50 | rmst |   0.036 |    -0.011 |    0.084 |    0.015 |   0.006 |    -0.104 |    0.116 |    0.865 |  -0.720 |    -1.071 | -0.368   |    0.000 | -3.540   |     -4.420 |    -2.660 | 0         |
 
-### 6.1.2 Regional
+### 7.1.2 Regional
 
 ``` r
 knitr::kable(regional_res_combined_css,digits=3)
@@ -604,7 +660,7 @@ knitr::kable(regional_res_combined_css,digits=3)
 | mid | rmst | 0.133   |     0.027 |    0.240 | 0        | 0.489   |     0.185 |    0.793 | 0        | 1.947   |     0.647 |    3.246 | 0        |    2.196 |     -1.347 |     5.739 |     0.048 |
 | o50 | rmst | 0.336   |     0.285 |    0.387 | 0        | 0.982   |     0.859 |    1.106 | 0        | 2.875   |     2.468 |    3.282 | 0        |    3.533 |      2.542 |     4.524 |     0.000 |
 
-### 6.1.3 Distant
+### 7.1.3 Distant
 
 ``` r
 knitr::kable(distant_res_combined_css,digits=3)
@@ -618,9 +674,9 @@ knitr::kable(distant_res_combined_css,digits=3)
 
 <br>
 
-## 6.2 OS
+## 7.2 OS
 
-### 6.2.1 Local
+### 7.2.1 Local
 
 ``` r
 knitr::kable(local_res_combined_os,digits=3)
@@ -632,7 +688,7 @@ knitr::kable(local_res_combined_os,digits=3)
 | mid | rmst |  -0.040 |    -0.149 |    0.069 |    0.291 |  -0.182 |    -0.436 |    0.071 |    0.040 |  -1.022 |    -2.010 | -0.034   |    0.003 | -4.260   |     -7.173 |    -1.346 | 0         |
 | o50 | rmst |   0.142 |     0.086 |    0.199 |    0.000 |   0.302 |     0.172 |    0.432 |    0.000 |   0.772 |     0.369 | 1.175    |    0.000 | 2.630    |      1.679 |     3.581 | 0         |
 
-### 6.2.2 Regional
+### 7.2.2 Regional
 
 ``` r
 knitr::kable(regional_res_combined_os,digits=3)
@@ -644,7 +700,7 @@ knitr::kable(regional_res_combined_os,digits=3)
 | mid | rmst | 0.138   |     0.033 |    0.243 | 0        | 0.509   |     0.217 |    0.800 | 0        | 1.967   |     0.759 |    3.176 | 0        |    2.523 |     -0.722 |     5.768 |     0.026 |
 | o50 | rmst | 0.471   |     0.417 |    0.526 | 0        | 1.309   |     1.182 |    1.436 | 0        | 4.064   |     3.675 |    4.453 | 0        |    7.754 |      6.881 |     8.627 |     0.000 |
 
-### 6.2.3 Distant
+### 7.2.3 Distant
 
 ``` r
 knitr::kable(distant_res_combined_os,digits=3)
@@ -658,9 +714,537 @@ knitr::kable(distant_res_combined_os,digits=3)
 
 <br><br>
 
-# 7 KM Plots with better 95% CIs
+# 8 KM Plots with better 95% CIs
 
 ``` r
+font_import()
+```
+
+    ## Importing fonts may take a few minutes, depending on the number of fonts and the speed of the system.
+    ## Continue? [y/n]
+
+    ## Exiting.
+
+``` r
+loadfonts(device = "win")
+```
+
+    ## Agency FB already registered with windowsFonts().
+
+    ## Algerian already registered with windowsFonts().
+
+    ## Arial Black already registered with windowsFonts().
+
+    ## Arial already registered with windowsFonts().
+
+    ## Arial Narrow already registered with windowsFonts().
+
+    ## Arial Rounded MT Bold already registered with windowsFonts().
+
+    ## Bahnschrift already registered with windowsFonts().
+
+    ## Baskerville Old Face already registered with windowsFonts().
+
+    ## Bauhaus 93 already registered with windowsFonts().
+
+    ## Bell MT already registered with windowsFonts().
+
+    ## Berlin Sans FB already registered with windowsFonts().
+
+    ## Berlin Sans FB Demi already registered with windowsFonts().
+
+    ## Bernard MT Condensed already registered with windowsFonts().
+
+    ## Blackadder ITC already registered with windowsFonts().
+
+    ## Bodoni MT already registered with windowsFonts().
+
+    ## Bodoni MT Black already registered with windowsFonts().
+
+    ## Bodoni MT Condensed already registered with windowsFonts().
+
+    ## Bodoni MT Poster Compressed already registered with windowsFonts().
+
+    ## Book Antiqua already registered with windowsFonts().
+
+    ## Bookman Old Style already registered with windowsFonts().
+
+    ## Bookshelf Symbol 7 already registered with windowsFonts().
+
+    ## Bradley Hand ITC already registered with windowsFonts().
+
+    ## Britannic Bold already registered with windowsFonts().
+
+    ## Broadway already registered with windowsFonts().
+
+    ## Brush Script MT already registered with windowsFonts().
+
+    ## Calibri already registered with windowsFonts().
+
+    ## Calibri Light already registered with windowsFonts().
+
+    ## Californian FB already registered with windowsFonts().
+
+    ## Calisto MT already registered with windowsFonts().
+
+    ## Cambria already registered with windowsFonts().
+
+    ## Candara already registered with windowsFonts().
+
+    ## Candara Light already registered with windowsFonts().
+
+    ## Cascadia Code already registered with windowsFonts().
+
+    ## Cascadia Mono already registered with windowsFonts().
+
+    ## Castellar already registered with windowsFonts().
+
+    ## Centaur already registered with windowsFonts().
+
+    ## Century already registered with windowsFonts().
+
+    ## Century Gothic already registered with windowsFonts().
+
+    ## Century Schoolbook already registered with windowsFonts().
+
+    ## Chiller already registered with windowsFonts().
+
+    ## Colonna MT already registered with windowsFonts().
+
+    ## Comic Sans MS already registered with windowsFonts().
+
+    ## Consolas already registered with windowsFonts().
+
+    ## Constantia already registered with windowsFonts().
+
+    ## Cooper Black already registered with windowsFonts().
+
+    ## Copperplate Gothic Bold already registered with windowsFonts().
+
+    ## Copperplate Gothic Light already registered with windowsFonts().
+
+    ## Corbel already registered with windowsFonts().
+
+    ## Corbel Light already registered with windowsFonts().
+
+    ## Courier New already registered with windowsFonts().
+
+    ## Curlz MT already registered with windowsFonts().
+
+    ## Dubai already registered with windowsFonts().
+
+    ## Dubai Light already registered with windowsFonts().
+
+    ## Dubai Medium already registered with windowsFonts().
+
+    ## Ebrima already registered with windowsFonts().
+
+    ## Edwardian Script ITC already registered with windowsFonts().
+
+    ## Elephant already registered with windowsFonts().
+
+    ## Engravers MT already registered with windowsFonts().
+
+    ## Eras Bold ITC already registered with windowsFonts().
+
+    ## Eras Demi ITC already registered with windowsFonts().
+
+    ## Eras Light ITC already registered with windowsFonts().
+
+    ## Eras Medium ITC already registered with windowsFonts().
+
+    ## Felix Titling already registered with windowsFonts().
+
+    ## Footlight MT Light already registered with windowsFonts().
+
+    ## Forte already registered with windowsFonts().
+
+    ## Franklin Gothic Book already registered with windowsFonts().
+
+    ## Franklin Gothic Demi already registered with windowsFonts().
+
+    ## Franklin Gothic Demi Cond already registered with windowsFonts().
+
+    ## Franklin Gothic Heavy already registered with windowsFonts().
+
+    ## Franklin Gothic Medium already registered with windowsFonts().
+
+    ## Franklin Gothic Medium Cond already registered with windowsFonts().
+
+    ## Freestyle Script already registered with windowsFonts().
+
+    ## French Script MT already registered with windowsFonts().
+
+    ## Gabriola already registered with windowsFonts().
+
+    ## Gadugi already registered with windowsFonts().
+
+    ## Garamond already registered with windowsFonts().
+
+    ## Georgia already registered with windowsFonts().
+
+    ## Gigi already registered with windowsFonts().
+
+    ## Gill Sans Ultra Bold already registered with windowsFonts().
+
+    ## Gill Sans Ultra Bold Condensed already registered with windowsFonts().
+
+    ## Gill Sans MT already registered with windowsFonts().
+
+    ## Gill Sans MT Condensed already registered with windowsFonts().
+
+    ## Gill Sans MT Ext Condensed Bold already registered with windowsFonts().
+
+    ## Gloucester MT Extra Condensed already registered with windowsFonts().
+
+    ## Goudy Old Style already registered with windowsFonts().
+
+    ## Goudy Stout already registered with windowsFonts().
+
+    ## Haettenschweiler already registered with windowsFonts().
+
+    ## Harlow Solid Italic already registered with windowsFonts().
+
+    ## Harrington already registered with windowsFonts().
+
+    ## High Tower Text already registered with windowsFonts().
+
+    ## HoloLens MDL2 Assets already registered with windowsFonts().
+
+    ## Impact already registered with windowsFonts().
+
+    ## Imprint MT Shadow already registered with windowsFonts().
+
+    ## Informal Roman already registered with windowsFonts().
+
+    ## Ink Free already registered with windowsFonts().
+
+    ## Javanese Text already registered with windowsFonts().
+
+    ## Jokerman already registered with windowsFonts().
+
+    ## Juice ITC already registered with windowsFonts().
+
+    ## Kristen ITC already registered with windowsFonts().
+
+    ## Kunstler Script already registered with windowsFonts().
+
+    ## Wide Latin already registered with windowsFonts().
+
+    ## Leelawadee UI already registered with windowsFonts().
+
+    ## Leelawadee UI Semilight already registered with windowsFonts().
+
+    ## Lucida Bright already registered with windowsFonts().
+
+    ## Lucida Calligraphy already registered with windowsFonts().
+
+    ## Lucida Console already registered with windowsFonts().
+
+    ## Lucida Fax already registered with windowsFonts().
+
+    ## Lucida Handwriting already registered with windowsFonts().
+
+    ## Lucida Sans already registered with windowsFonts().
+
+    ## Lucida Sans Typewriter already registered with windowsFonts().
+
+    ## Lucida Sans Unicode already registered with windowsFonts().
+
+    ## Magneto already registered with windowsFonts().
+
+    ## Maiandra GD already registered with windowsFonts().
+
+    ## Malgun Gothic already registered with windowsFonts().
+
+    ## Malgun Gothic Semilight already registered with windowsFonts().
+
+    ## Marlett already registered with windowsFonts().
+
+    ## Matura MT Script Capitals already registered with windowsFonts().
+
+    ## Microsoft Himalaya already registered with windowsFonts().
+
+    ## Microsoft Yi Baiti already registered with windowsFonts().
+
+    ## Microsoft New Tai Lue already registered with windowsFonts().
+
+    ## Microsoft PhagsPa already registered with windowsFonts().
+
+    ## Microsoft Sans Serif already registered with windowsFonts().
+
+    ## Microsoft Tai Le already registered with windowsFonts().
+
+    ## Mistral already registered with windowsFonts().
+
+    ## Modern No. 20 already registered with windowsFonts().
+
+    ## Mongolian Baiti already registered with windowsFonts().
+
+    ## Monotype Corsiva already registered with windowsFonts().
+
+    ## MS Outlook already registered with windowsFonts().
+
+    ## MS Reference Sans Serif already registered with windowsFonts().
+
+    ## MS Reference Specialty already registered with windowsFonts().
+
+    ## MT Extra already registered with windowsFonts().
+
+    ## MV Boli already registered with windowsFonts().
+
+    ## Myanmar Text already registered with windowsFonts().
+
+    ## Niagara Engraved already registered with windowsFonts().
+
+    ## Niagara Solid already registered with windowsFonts().
+
+    ## Nirmala UI already registered with windowsFonts().
+
+    ## Nirmala UI Semilight already registered with windowsFonts().
+
+    ## OCR A Extended already registered with windowsFonts().
+
+    ## Old English Text MT already registered with windowsFonts().
+
+    ## Onyx already registered with windowsFonts().
+
+    ## Palace Script MT already registered with windowsFonts().
+
+    ## Palatino Linotype already registered with windowsFonts().
+
+    ## Papyrus already registered with windowsFonts().
+
+    ## Parchment already registered with windowsFonts().
+
+    ## Perpetua already registered with windowsFonts().
+
+    ## Perpetua Titling MT already registered with windowsFonts().
+
+    ## Playbill already registered with windowsFonts().
+
+    ## Poor Richard already registered with windowsFonts().
+
+    ## Pristina already registered with windowsFonts().
+
+    ## Rage Italic already registered with windowsFonts().
+
+    ## Raleway Black already registered with windowsFonts().
+
+    ## Raleway already registered with windowsFonts().
+
+    ## Raleway ExtraBold already registered with windowsFonts().
+
+    ## Raleway ExtraLight already registered with windowsFonts().
+
+    ## Raleway Light already registered with windowsFonts().
+
+    ## Raleway Medium already registered with windowsFonts().
+
+    ## Raleway SemiBold already registered with windowsFonts().
+
+    ## Raleway Thin already registered with windowsFonts().
+
+    ## Ravie already registered with windowsFonts().
+
+    ## Rockwell already registered with windowsFonts().
+
+    ## Rockwell Condensed already registered with windowsFonts().
+
+    ## Rockwell Extra Bold already registered with windowsFonts().
+
+    ## Rubik Black already registered with windowsFonts().
+
+    ## Rubik already registered with windowsFonts().
+
+    ## Rubik ExtraBold already registered with windowsFonts().
+
+    ## Rubik Light already registered with windowsFonts().
+
+    ## Rubik Medium already registered with windowsFonts().
+
+    ## Rubik SemiBold already registered with windowsFonts().
+
+    ## Script MT Bold already registered with windowsFonts().
+
+    ## Segoe MDL2 Assets already registered with windowsFonts().
+
+    ## Segoe Print already registered with windowsFonts().
+
+    ## Segoe Script already registered with windowsFonts().
+
+    ## Segoe UI already registered with windowsFonts().
+
+    ## Segoe UI Light already registered with windowsFonts().
+
+    ## Segoe UI Semibold already registered with windowsFonts().
+
+    ## Segoe UI Semilight already registered with windowsFonts().
+
+    ## Segoe UI Black already registered with windowsFonts().
+
+    ## Segoe UI Emoji already registered with windowsFonts().
+
+    ## Segoe UI Historic already registered with windowsFonts().
+
+    ## Segoe UI Symbol already registered with windowsFonts().
+
+    ## Showcard Gothic already registered with windowsFonts().
+
+    ## SimSun-ExtB already registered with windowsFonts().
+
+    ## Snap ITC already registered with windowsFonts().
+
+    ## Stencil already registered with windowsFonts().
+
+    ## Sylfaen already registered with windowsFonts().
+
+    ## Symbol already registered with windowsFonts().
+
+    ## Tahoma already registered with windowsFonts().
+
+    ## Tempus Sans ITC already registered with windowsFonts().
+
+    ## Times New Roman already registered with windowsFonts().
+
+    ## Trebuchet MS already registered with windowsFonts().
+
+    ## Tw Cen MT already registered with windowsFonts().
+
+    ## Tw Cen MT Condensed already registered with windowsFonts().
+
+    ## Tw Cen MT Condensed Extra Bold already registered with windowsFonts().
+
+    ## Unispace already registered with windowsFonts().
+
+    ## Verdana already registered with windowsFonts().
+
+    ## Viner Hand ITC already registered with windowsFonts().
+
+    ## Vivaldi already registered with windowsFonts().
+
+    ## Vladimir Script already registered with windowsFonts().
+
+    ## Webdings already registered with windowsFonts().
+
+    ## Wingdings already registered with windowsFonts().
+
+    ## Wingdings 2 already registered with windowsFonts().
+
+    ## Wingdings 3 already registered with windowsFonts().
+
+    ## ZWAdobeF already registered with windowsFonts().
+
+``` r
+fonts()
+```
+
+    ##   [1] "Agency FB"                       "Algerian"                       
+    ##   [3] "Arial Black"                     "Arial"                          
+    ##   [5] "Arial Narrow"                    "Arial Rounded MT Bold"          
+    ##   [7] "Bahnschrift"                     "Baskerville Old Face"           
+    ##   [9] "Bauhaus 93"                      "Bell MT"                        
+    ##  [11] "Berlin Sans FB"                  "Berlin Sans FB Demi"            
+    ##  [13] "Bernard MT Condensed"            "Blackadder ITC"                 
+    ##  [15] "Bodoni MT"                       "Bodoni MT Black"                
+    ##  [17] "Bodoni MT Condensed"             "Bodoni MT Poster Compressed"    
+    ##  [19] "Book Antiqua"                    "Bookman Old Style"              
+    ##  [21] "Bookshelf Symbol 7"              "Bradley Hand ITC"               
+    ##  [23] "Britannic Bold"                  "Broadway"                       
+    ##  [25] "Brush Script MT"                 "Calibri"                        
+    ##  [27] "Calibri Light"                   "Californian FB"                 
+    ##  [29] "Calisto MT"                      "Cambria"                        
+    ##  [31] "Candara"                         "Candara Light"                  
+    ##  [33] "Cascadia Code"                   "Cascadia Mono"                  
+    ##  [35] "Castellar"                       "Centaur"                        
+    ##  [37] "Century"                         "Century Gothic"                 
+    ##  [39] "Century Schoolbook"              "Chiller"                        
+    ##  [41] "Colonna MT"                      "Comic Sans MS"                  
+    ##  [43] "Consolas"                        "Constantia"                     
+    ##  [45] "Cooper Black"                    "Copperplate Gothic Bold"        
+    ##  [47] "Copperplate Gothic Light"        "Corbel"                         
+    ##  [49] "Corbel Light"                    "Courier New"                    
+    ##  [51] "Curlz MT"                        "Dubai"                          
+    ##  [53] "Dubai Light"                     "Dubai Medium"                   
+    ##  [55] "Ebrima"                          "Edwardian Script ITC"           
+    ##  [57] "Elephant"                        "Engravers MT"                   
+    ##  [59] "Eras Bold ITC"                   "Eras Demi ITC"                  
+    ##  [61] "Eras Light ITC"                  "Eras Medium ITC"                
+    ##  [63] "Felix Titling"                   "Footlight MT Light"             
+    ##  [65] "Forte"                           "Franklin Gothic Book"           
+    ##  [67] "Franklin Gothic Demi"            "Franklin Gothic Demi Cond"      
+    ##  [69] "Franklin Gothic Heavy"           "Franklin Gothic Medium"         
+    ##  [71] "Franklin Gothic Medium Cond"     "Freestyle Script"               
+    ##  [73] "French Script MT"                "Gabriola"                       
+    ##  [75] "Gadugi"                          "Garamond"                       
+    ##  [77] "Georgia"                         "Gigi"                           
+    ##  [79] "Gill Sans Ultra Bold"            "Gill Sans Ultra Bold Condensed" 
+    ##  [81] "Gill Sans MT"                    "Gill Sans MT Condensed"         
+    ##  [83] "Gill Sans MT Ext Condensed Bold" "Gloucester MT Extra Condensed"  
+    ##  [85] "Goudy Old Style"                 "Goudy Stout"                    
+    ##  [87] "Haettenschweiler"                "Harlow Solid Italic"            
+    ##  [89] "Harrington"                      "High Tower Text"                
+    ##  [91] "HoloLens MDL2 Assets"            "Impact"                         
+    ##  [93] "Imprint MT Shadow"               "Informal Roman"                 
+    ##  [95] "Ink Free"                        "Javanese Text"                  
+    ##  [97] "Jokerman"                        "Juice ITC"                      
+    ##  [99] "Kristen ITC"                     "Kunstler Script"                
+    ## [101] "Wide Latin"                      "Leelawadee UI"                  
+    ## [103] "Leelawadee UI Semilight"         "Lucida Bright"                  
+    ## [105] "Lucida Calligraphy"              "Lucida Console"                 
+    ## [107] "Lucida Fax"                      "Lucida Handwriting"             
+    ## [109] "Lucida Sans"                     "Lucida Sans Typewriter"         
+    ## [111] "Lucida Sans Unicode"             "Magneto"                        
+    ## [113] "Maiandra GD"                     "Malgun Gothic"                  
+    ## [115] "Malgun Gothic Semilight"         "Marlett"                        
+    ## [117] "Matura MT Script Capitals"       "Microsoft Himalaya"             
+    ## [119] "Microsoft Yi Baiti"              "Microsoft New Tai Lue"          
+    ## [121] "Microsoft PhagsPa"               "Microsoft Sans Serif"           
+    ## [123] "Microsoft Tai Le"                "Mistral"                        
+    ## [125] "Modern No. 20"                   "Mongolian Baiti"                
+    ## [127] "Monotype Corsiva"                "MS Outlook"                     
+    ## [129] "MS Reference Sans Serif"         "MS Reference Specialty"         
+    ## [131] "MT Extra"                        "MV Boli"                        
+    ## [133] "Myanmar Text"                    "Niagara Engraved"               
+    ## [135] "Niagara Solid"                   "Nirmala UI"                     
+    ## [137] "Nirmala UI Semilight"            "OCR A Extended"                 
+    ## [139] "Old English Text MT"             "Onyx"                           
+    ## [141] "Palace Script MT"                "Palatino Linotype"              
+    ## [143] "Papyrus"                         "Parchment"                      
+    ## [145] "Perpetua"                        "Perpetua Titling MT"            
+    ## [147] "Playbill"                        "Poor Richard"                   
+    ## [149] "Pristina"                        "Rage Italic"                    
+    ## [151] "Raleway Black"                   "Raleway"                        
+    ## [153] "Raleway ExtraBold"               "Raleway ExtraLight"             
+    ## [155] "Raleway Light"                   "Raleway Medium"                 
+    ## [157] "Raleway SemiBold"                "Raleway Thin"                   
+    ## [159] "Ravie"                           "Rockwell"                       
+    ## [161] "Rockwell Condensed"              "Rockwell Extra Bold"            
+    ## [163] "Rubik Black"                     "Rubik"                          
+    ## [165] "Rubik ExtraBold"                 "Rubik Light"                    
+    ## [167] "Rubik Medium"                    "Rubik SemiBold"                 
+    ## [169] "Script MT Bold"                  "Segoe MDL2 Assets"              
+    ## [171] "Segoe Print"                     "Segoe Script"                   
+    ## [173] "Segoe UI"                        "Segoe UI Light"                 
+    ## [175] "Segoe UI Semibold"               "Segoe UI Semilight"             
+    ## [177] "Segoe UI Black"                  "Segoe UI Emoji"                 
+    ## [179] "Segoe UI Historic"               "Segoe UI Symbol"                
+    ## [181] "Showcard Gothic"                 "SimSun-ExtB"                    
+    ## [183] "Snap ITC"                        "Stencil"                        
+    ## [185] "Sylfaen"                         "Symbol"                         
+    ## [187] "Tahoma"                          "Tempus Sans ITC"                
+    ## [189] "Times New Roman"                 "Trebuchet MS"                   
+    ## [191] "Tw Cen MT"                       "Tw Cen MT Condensed"            
+    ## [193] "Tw Cen MT Condensed Extra Bold"  "Unispace"                       
+    ## [195] "Verdana"                         "Viner Hand ITC"                 
+    ## [197] "Vivaldi"                         "Vladimir Script"                
+    ## [199] "Webdings"                        "Wingdings"                      
+    ## [201] "Wingdings 2"                     "Wingdings 3"                    
+    ## [203] "ZWAdobeF"
+
+``` r
+options(device = "windows")
+
 # makes a KM fit and calcs logep 95% CIs, returns the data for use with ggplot. Takes full dataset, age group and stage as strings, TRUE for CSS and FALSE for OS
 make_plot_dat <- function(data_set, age_grp, stage, css = TRUE){
   
@@ -701,11 +1285,15 @@ make_plot <- function(plot_dat,fig_title){# takes in plot data generated from ma
     geom_ribbon(aes(ymin=lower,ymax=upper,x=time,fill=type),alpha=.2,size=0.1)+
     ggtitle(fig_title)+theme_test()+
     theme(
-      plot.title = element_text(size=8),
+      plot.title = element_text(size=10),
       axis.title = element_blank(),
-      panel.grid.major.x= element_line(linewidth=0.2,linetype = 3))+
+      panel.grid.major.x = element_line(linewidth=0.2,linetype = 3),
+      text = element_text(family = "Calibri"))+
     # x axis breaks at 2,5,10, and 15 years
-    scale_x_continuous(limits=c(0,240),breaks=c(0,24,60,120,180),labels=c("0","2","5","10","15"))
+    scale_x_continuous(limits=c(0,240),breaks=c(0,24,60,120,180),labels=c("0","2","5","10","15"))+
+    labs(fill="Tumor Location",color="Tumor Location")+
+    scale_fill_manual(labels= c("Can be seen on sigmoidoscopy", "Can NOT be seen on sigmoidoscopy"),values=c("#92c5de","#f4a582")) +
+    scale_color_manual(labels= c("Can be seen on sigmoidoscopy", "Can NOT be seen on sigmoidoscopy"),values=c("#0571b0","#ca0020"))
     
   return(p)
 }
@@ -713,96 +1301,134 @@ make_plot <- function(plot_dat,fig_title){# takes in plot data generated from ma
 
 <br><br>
 
-## 7.1 CSS Plots
+## 8.1 CSS Plots
 
 ``` r
 # Local
-u45_local_plot <- make_plot_dat(new_data7, "under45", "Localized")
-a<-make_plot(u45_local_plot,"A: <45 Local")
-```
+u45_local_plot_css <- make_plot_dat(new_data7, "under45", "Localized")
+a_css<-make_plot(u45_local_plot_css,"A: <45 Local")
 
-    ## Warning: Using `size` aesthetic for lines was deprecated in ggplot2 3.4.0.
-    ## ℹ Please use `linewidth` instead.
+midage_local_plot_css <- make_plot_dat(new_data7, "45-50", "Localized")
+b_css<-make_plot(midage_local_plot_css,"B: 45-49 Local")
 
-``` r
-midage_local_plot <- make_plot_dat(new_data7, "45-50", "Localized")
-b<-make_plot(midage_local_plot,"B: 45-50 Local")
-
-o50_local_plot <- make_plot_dat(new_data7, "over50", "Localized")
-c<-make_plot(o50_local_plot ,"C: >50 Local")
+o50_local_plot_css <- make_plot_dat(new_data7, "over50", "Localized")
+c_css<-make_plot(o50_local_plot_css, "C: 50+ Local")
 
 
 # Regional
-u45_reg_plot <- make_plot_dat(new_data7, "under45", "Regional")
-d<-make_plot(u45_reg_plot,"D: <45 Regional")
+u45_reg_plot_css <- make_plot_dat(new_data7, "under45", "Regional")
+d_css<-make_plot(u45_reg_plot_css, "D: <45 Regional")
 
-midage_reg_plot <- make_plot_dat(new_data7, "45-50", "Regional")
-e<-make_plot(midage_reg_plot,"E: 45-50 Regional")
+midage_reg_plot_css <- make_plot_dat(new_data7, "45-50", "Regional")
+e_css<-make_plot(midage_reg_plot_css, "E: 45-49 Regional")
 
-o50_reg_plot <- make_plot_dat(new_data7, "over50", "Regional")
-f<-make_plot(o50_reg_plot,"F: >50 Regional")
+o50_reg_plot_css <- make_plot_dat(new_data7, "over50", "Regional")
+f_css<-make_plot(o50_reg_plot_css, "F: 50+ Regional")
 
 
 # Distant
-u45_dist_plot <- make_plot_dat(new_data7, "under45", "Distant")
-g<-make_plot(u45_dist_plot,"G:<45 Distant")
+u45_dist_plot_css <- make_plot_dat(new_data7, "under45", "Distant")
+g_css<-make_plot(u45_dist_plot_css,"G: <45 Distant")
 
-midage_dist_plot <- make_plot_dat(new_data7, "45-50", "Distant")
-h<-make_plot(midage_dist_plot ,"H: 45-50 Distant")
+midage_dist_plot_css <- make_plot_dat(new_data7, "45-50", "Distant")
+h_css<-make_plot(midage_dist_plot_css ,"H: 45-49 Distant")
 
-o50_dist_plot <- make_plot_dat(new_data7, "over50", "Distant")
-i<-make_plot(o50_dist_plot ,"I: >50 Distant")
+o50_dist_plot_css <- make_plot_dat(new_data7, "over50", "Distant")
+i_css<-make_plot(o50_dist_plot_css ,"I: 50+ Distant")
 
-ggarrange(a,b,c,d,e,f,g,h,i,common.legend = TRUE)
+ggarrange(a_css,b_css,c_css,d_css,e_css,f_css,g_css,h_css,i_css, common.legend = TRUE, legend = "bottom")
 ```
 
-![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
+    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font metrics
+    ## unknown for character 0x4d
+
+    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font width
+    ## unknown for character 0x67
+
+    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font width
+    ## unknown for character 0x6a
+
+    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font width
+    ## unknown for character 0x70
+
+    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font width
+    ## unknown for character 0x71
+
+    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font width
+    ## unknown for character 0x79
+
+    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font width
+    ## unknown for character 0x51
+
+    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font metrics
+    ## unknown for character 0x4d
+
+    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font width
+    ## unknown for character 0x67
+
+    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font width
+    ## unknown for character 0x6a
+
+    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font width
+    ## unknown for character 0x70
+
+    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font width
+    ## unknown for character 0x71
+
+    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font width
+    ## unknown for character 0x79
+
+    ## Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)): font width
+    ## unknown for character 0x51
+
+![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
 
 ``` r
+#?ggarrange()
 #ggsave(plot=last_plot(),file="css_km.png",height=8, width=11.5)
 ```
 
 <br><br>
 
-## 7.2 OS plots
+## 8.2 OS plots
 
 ``` r
 # Local
-u45_local_plot <- make_plot_dat(new_data7, "under45", "Localized",FALSE)
-a<-make_plot(u45_local_plot,"A: <45 Local")
+u45_local_plot_os <- make_plot_dat(new_data7, "under45", "Localized",FALSE)
+a_os<-make_plot(u45_local_plot_os,"A: <45 Local")
 
-midage_local_plot <- make_plot_dat(new_data7, "45-50", "Localized",FALSE)
-b<-make_plot(midage_local_plot,"B: 45-50 Local")
+midage_local_plot_os <- make_plot_dat(new_data7, "45-50", "Localized",FALSE)
+b_os<-make_plot(midage_local_plot_os,"B: 45-49 Local")
 
-o50_local_plot <- make_plot_dat(new_data7, "over50", "Localized",FALSE)
-c<-make_plot(o50_local_plot ,"C: >50 Local")
+o50_local_plot_os <- make_plot_dat(new_data7, "over50", "Localized",FALSE)
+c_os<-make_plot(o50_local_plot_os ,"C: 50+ Local")
 
 
 # Regional
-u45_reg_plot <- make_plot_dat(new_data7, "under45", "Regional",FALSE)
-d<-make_plot(u45_reg_plot,"D: <45 Regional")
+u45_reg_plot_os <- make_plot_dat(new_data7, "under45", "Regional",FALSE)
+d_os<-make_plot(u45_reg_plot_os,"D: <45 Regional")
 
-midage_reg_plot <- make_plot_dat(new_data7, "45-50", "Regional",FALSE)
-e<-make_plot(midage_reg_plot,"E: 45-50 Regional")
+midage_reg_plot_os <- make_plot_dat(new_data7, "45-50", "Regional",FALSE)
+e_os<-make_plot(midage_reg_plot_os,"E: 45-49 Regional")
 
-o50_reg_plot <- make_plot_dat(new_data7, "over50", "Regional",FALSE)
-f<-make_plot(o50_reg_plot,"F: >50 Regional")
+o50_reg_plot_os <- make_plot_dat(new_data7, "over50", "Regional",FALSE)
+f_os<-make_plot(o50_reg_plot_os,"F: 50+ Regional")
 
 
 # Distant
-u45_dist_plot <- make_plot_dat(new_data7, "under45", "Distant",FALSE)
-g<-make_plot(u45_dist_plot,"G:<45 Distant")
+u45_dist_plot_os <- make_plot_dat(new_data7, "under45", "Distant",FALSE)
+g_os<-make_plot(u45_dist_plot_os,"G:<45 Distant")
 
-midage_dist_plot <- make_plot_dat(new_data7, "45-50", "Distant",FALSE)
-h<-make_plot(midage_dist_plot ,"H: 45-50 Distant")
+midage_dist_plot_os <- make_plot_dat(new_data7, "45-50", "Distant",FALSE)
+h_os<-make_plot(midage_dist_plot_os ,"H: 45-49 Distant")
 
-o50_dist_plot <- make_plot_dat(new_data7, "over50", "Distant",FALSE)
-i<-make_plot(o50_dist_plot ,"I: >50 Distant")
+o50_dist_plot_os <- make_plot_dat(new_data7, "over50", "Distant",FALSE)
+i_os<-make_plot(o50_dist_plot_os ,"I: 50+ Distant")
 
-ggarrange(a,b,c,d,e,f,g,h,i,common.legend = TRUE)+ggtitle("OS")
+ggarrange(a_os,b_os,c_os,d_os,e_os,f_os,g_os,h_os,i_os,common.legend = TRUE, legend = "bottom")
 ```
 
-![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
+![](SEER_CRC_Sigmoidoscopy_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
 
 ``` r
 #ggsave(plot=last_plot(),file="os_km.png",height=8, width=11.5)
@@ -810,7 +1436,7 @@ ggarrange(a,b,c,d,e,f,g,h,i,common.legend = TRUE)+ggtitle("OS")
 
 <br><br>
 
-# 8 Session Info
+# 9 Session Info
 
 ``` r
 sessionInfo()
@@ -833,35 +1459,37 @@ sessionInfo()
     ## [1] stats     graphics  grDevices utils     datasets  methods   base     
     ## 
     ## other attached packages:
-    ##  [1] km.ci_0.5-6     survRM2_1.0-4   forcats_1.0.0   stringr_1.5.0  
-    ##  [5] dplyr_1.1.0     purrr_1.0.1     readr_2.1.3     tidyr_1.3.0    
-    ##  [9] tibble_3.1.8    tidyverse_1.3.2 survminer_0.4.9 ggpubr_0.5.0   
-    ## [13] ggplot2_3.4.0   survival_3.4-0  MASS_7.3-58.1   broom_1.0.3    
+    ##  [1] extrafont_0.19  table1_1.4.3    km.ci_0.5-6     survRM2_1.0-4  
+    ##  [5] forcats_1.0.0   stringr_1.5.0   dplyr_1.1.0     purrr_1.0.1    
+    ##  [9] readr_2.1.3     tidyr_1.3.0     tibble_3.1.8    tidyverse_1.3.2
+    ## [13] survminer_0.4.9 ggpubr_0.5.0    ggplot2_3.4.0   survival_3.4-0 
+    ## [17] MASS_7.3-58.1   broom_1.0.3    
     ## 
     ## loaded via a namespace (and not attached):
-    ##  [1] httr_1.4.4          bit64_4.0.5         vroom_1.6.1        
-    ##  [4] jsonlite_1.8.4      splines_4.2.2       carData_3.0-5      
-    ##  [7] modelr_0.1.10       assertthat_0.2.1    highr_0.10         
-    ## [10] googlesheets4_1.0.1 cellranger_1.1.0    yaml_2.3.7         
-    ## [13] pillar_1.8.1        backports_1.4.1     lattice_0.20-45    
-    ## [16] glue_1.6.2          digest_0.6.31       ggsignif_0.6.4     
-    ## [19] rvest_1.0.3         colorspace_2.1-0    cowplot_1.1.1      
-    ## [22] htmltools_0.5.4     Matrix_1.5-1        pkgconfig_2.0.3    
-    ## [25] haven_2.5.1         xtable_1.8-4        scales_1.2.1       
-    ## [28] KMsurv_0.1-5        tzdb_0.3.0          timechange_0.2.0   
-    ## [31] googledrive_2.0.0   farver_2.1.1        generics_0.1.3     
-    ## [34] car_3.1-1           ellipsis_0.3.2      withr_2.5.0        
-    ## [37] cli_3.4.1           crayon_1.5.2        magrittr_2.0.3     
-    ## [40] readxl_1.4.1        evaluate_0.20       fs_1.6.0           
-    ## [43] fansi_1.0.3         rstatix_0.7.2       xml2_1.3.3         
-    ## [46] tools_4.2.2         data.table_1.14.6   hms_1.1.2          
-    ## [49] gargle_1.3.0        lifecycle_1.0.3     munsell_0.5.0      
-    ## [52] reprex_2.0.2        compiler_4.2.2      rlang_1.0.6        
-    ## [55] grid_4.2.2          rstudioapi_0.14     labeling_0.4.2     
-    ## [58] rmarkdown_2.20      gtable_0.3.1        abind_1.4-5        
-    ## [61] DBI_1.1.3           R6_2.5.1            gridExtra_2.3      
-    ## [64] zoo_1.8-11          lubridate_1.9.1     knitr_1.42         
-    ## [67] bit_4.0.5           fastmap_1.1.0       survMisc_0.5.6     
-    ## [70] utf8_1.2.2          stringi_1.7.12      parallel_4.2.2     
-    ## [73] vctrs_0.5.2         dbplyr_2.3.0        tidyselect_1.2.0   
-    ## [76] xfun_0.37
+    ##  [1] fs_1.6.0            lubridate_1.9.1     bit64_4.0.5        
+    ##  [4] httr_1.4.4          tools_4.2.2         backports_1.4.1    
+    ##  [7] utf8_1.2.2          R6_2.5.1            DBI_1.1.3          
+    ## [10] colorspace_2.1-0    withr_2.5.0         tidyselect_1.2.0   
+    ## [13] gridExtra_2.3       bit_4.0.5           compiler_4.2.2     
+    ## [16] extrafontdb_1.0     cli_3.4.1           rvest_1.0.3        
+    ## [19] xml2_1.3.3          labeling_0.4.2      scales_1.2.1       
+    ## [22] survMisc_0.5.6      digest_0.6.31       rmarkdown_2.20     
+    ## [25] pkgconfig_2.0.3     htmltools_0.5.4     highr_0.10         
+    ## [28] dbplyr_2.3.0        fastmap_1.1.0       rlang_1.0.6        
+    ## [31] readxl_1.4.1        rstudioapi_0.14     farver_2.1.1       
+    ## [34] generics_0.1.3      zoo_1.8-11          jsonlite_1.8.4     
+    ## [37] vroom_1.6.1         car_3.1-1           googlesheets4_1.0.1
+    ## [40] magrittr_2.0.3      Formula_1.2-5       Matrix_1.5-1       
+    ## [43] munsell_0.5.0       fansi_1.0.3         abind_1.4-5        
+    ## [46] lifecycle_1.0.3     stringi_1.7.12      yaml_2.3.7         
+    ## [49] carData_3.0-5       grid_4.2.2          parallel_4.2.2     
+    ## [52] crayon_1.5.2        lattice_0.20-45     cowplot_1.1.1      
+    ## [55] haven_2.5.1         splines_4.2.2       hms_1.1.2          
+    ## [58] knitr_1.42          pillar_1.8.1        ggsignif_0.6.4     
+    ## [61] reprex_2.0.2        glue_1.6.2          evaluate_0.20      
+    ## [64] data.table_1.14.6   modelr_0.1.10       vctrs_0.5.2        
+    ## [67] tzdb_0.3.0          Rttf2pt1_1.3.12     cellranger_1.1.0   
+    ## [70] gtable_0.3.1        assertthat_0.2.1    xfun_0.37          
+    ## [73] xtable_1.8-4        rstatix_0.7.2       googledrive_2.0.0  
+    ## [76] gargle_1.3.0        KMsurv_0.1-5        timechange_0.2.0   
+    ## [79] ellipsis_0.3.2

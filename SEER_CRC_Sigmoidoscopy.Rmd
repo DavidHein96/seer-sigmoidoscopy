@@ -24,6 +24,8 @@ library(tidyverse)
 library(survRM2)
 library(km.ci)
 library(readr)
+library(table1)
+library(extrafont)
 set.seed(2023)
 
 seer_data <- read_delim("seer_data.txt", delim = "\t", escape_double = FALSE, trim_ws = TRUE)
@@ -48,7 +50,7 @@ new_data<-seer_data%>%dplyr::select(Sex, `Year of diagnosis`,
                                 `Grade Clinical (2018+)`,
                                 `Histologic Type ICD-O-3`)
 
-# need to take out 181 appendix, 260, 188, and 189 becuase location unknown
+# need to take out 181 appendix, 260, 188, and 189 because location unknown
 new_data <-new_data %>% filter( !`Primary Site` %in% c(260,188,189,181))
 
 # only adenocarcinoma
@@ -136,6 +138,41 @@ rm(new_data4)
 
 # Print out table 1
 table(new_data5$primary_site,new_data5$age_group_final,new_data5$new_stage)
+
+# Make a nice neat table 1
+# Make table 1, patient cohort characteristics
+#  Here filter_site set to FALSE returns all patient clinical data in a single df, only filtering out unknown MSI and unknown sex
+#clinical_overall <- filter_format_clinical_files(clinical_no_duplicates, crc_cancer_stage, remove_msi = FALSE, filter_site = FALSE) 
+#clinical_overall <- clinical_overall %>% filter(new_site %in% c("Colon","Rectum","Liver"))
+#clinical_overall <- clinical_overall %>% mutate(site2 = ifelse(new_site == "Liver", "Liver", "Colon/Rectum"))
+#table1(~ genetic_ancestry_group + age_at_onset_CRC + 
+#         early_onset + gender + assay_name_rna + stage2 + 
+#         grade + msi_status + new_site | site2, data = clinical_overall)
+```
+<br>
+
+
+
+# Bar graph figure
+```{r}
+sum_data <- new_data5 %>% group_by(age_numeric,new_stage) %>% summarize(sigcan=sum(can_see_sigmoid)/n())
+sum_data$nocan <- 1-sum_data$sigcan
+sum_data <- pivot_longer(sum_data, cols = c(sigcan,nocan), names_to = "proptype", values_to = "proportion")
+ggplot(sum_data,aes( x = age_numeric, y = proportion, fill = proptype)) +
+  geom_bar(stat="identity",position="fill",width=1.1)+
+  facet_wrap(~new_stage,ncol=1) +
+  theme_test() +
+  labs(fill="Visualization on Sigmoidoscopy") +
+  scale_fill_manual(labels=c("Can NOT be visualized","Can be visualized"), 
+                      values=c("#f4a582","#92c5de")) +
+  ylab("Proportion of Total Cases") + xlab("Age at diagnosis") +
+  scale_x_continuous(limits=c(18,90),breaks=c(20,30,40,45,50,60,70,80)) +
+  geom_vline(aes(xintercept=44.5), color="black", linetype="dashed",size=0.4) +
+  geom_vline(aes(xintercept=49.5), color="black", linetype="dashed",size=0.4) # +
+ # scale_fill_manual(values = c("#92c5de","#f4a582"))
+
+
+#ggsave(plot=last_plot(),file="bar_graph.png",heigh=4, width=6,dpi = "retina")
 ```
 <br>
 
@@ -260,7 +297,7 @@ ggsurvplot(km_site,censor=FALSE,ylim=c(0.5,1),xlim=c(0,100))
 
 # Survival Analysis 
 ```{r}
-# take out patients with 0 survival months
+# Make sure to not take out the 0 month patients here!
 new_data6<-new_data5#%>%filter(survival_months>0)
 new_data7<- new_data6%>%select(survival_months,cancer_specific_status,can_see_sigmoid,age_group_final,new_stage,overall_status)
 
@@ -408,6 +445,11 @@ knitr::kable(distant_res_combined_os,digits=3)
 # KM Plots with better 95% CIs
 ```{r}
 
+font_import()
+loadfonts(device = "win")
+fonts()
+options(device = "windows")
+
 # makes a KM fit and calcs logep 95% CIs, returns the data for use with ggplot. Takes full dataset, age group and stage as strings, TRUE for CSS and FALSE for OS
 make_plot_dat <- function(data_set, age_grp, stage, css = TRUE){
   
@@ -448,11 +490,15 @@ make_plot <- function(plot_dat,fig_title){# takes in plot data generated from ma
     geom_ribbon(aes(ymin=lower,ymax=upper,x=time,fill=type),alpha=.2,size=0.1)+
     ggtitle(fig_title)+theme_test()+
     theme(
-      plot.title = element_text(size=8),
+      plot.title = element_text(size=10),
       axis.title = element_blank(),
-      panel.grid.major.x= element_line(linewidth=0.2,linetype = 3))+
+      panel.grid.major.x = element_line(linewidth=0.2,linetype = 3),
+      text = element_text(family = "Calibri"))+
     # x axis breaks at 2,5,10, and 15 years
-    scale_x_continuous(limits=c(0,240),breaks=c(0,24,60,120,180),labels=c("0","2","5","10","15"))
+    scale_x_continuous(limits=c(0,240),breaks=c(0,24,60,120,180),labels=c("0","2","5","10","15"))+
+    labs(fill="Tumor Location",color="Tumor Location")+
+    scale_fill_manual(labels= c("Can be seen on sigmoidoscopy", "Can NOT be seen on sigmoidoscopy"),values=c("#92c5de","#f4a582")) +
+    scale_color_manual(labels= c("Can be seen on sigmoidoscopy", "Can NOT be seen on sigmoidoscopy"),values=c("#0571b0","#ca0020"))
     
   return(p)
 }
@@ -466,39 +512,39 @@ make_plot <- function(plot_dat,fig_title){# takes in plot data generated from ma
 ```{r,fig.width=9,fig.height=6}
 
 # Local
-u45_local_plot <- make_plot_dat(new_data7, "under45", "Localized")
-a<-make_plot(u45_local_plot,"A: <45 Local")
+u45_local_plot_css <- make_plot_dat(new_data7, "under45", "Localized")
+a_css<-make_plot(u45_local_plot_css,"A: <45 Local")
 
-midage_local_plot <- make_plot_dat(new_data7, "45-50", "Localized")
-b<-make_plot(midage_local_plot,"B: 45-50 Local")
+midage_local_plot_css <- make_plot_dat(new_data7, "45-50", "Localized")
+b_css<-make_plot(midage_local_plot_css,"B: 45-49 Local")
 
-o50_local_plot <- make_plot_dat(new_data7, "over50", "Localized")
-c<-make_plot(o50_local_plot ,"C: >50 Local")
+o50_local_plot_css <- make_plot_dat(new_data7, "over50", "Localized")
+c_css<-make_plot(o50_local_plot_css, "C: 50+ Local")
 
 
 # Regional
-u45_reg_plot <- make_plot_dat(new_data7, "under45", "Regional")
-d<-make_plot(u45_reg_plot,"D: <45 Regional")
+u45_reg_plot_css <- make_plot_dat(new_data7, "under45", "Regional")
+d_css<-make_plot(u45_reg_plot_css, "D: <45 Regional")
 
-midage_reg_plot <- make_plot_dat(new_data7, "45-50", "Regional")
-e<-make_plot(midage_reg_plot,"E: 45-50 Regional")
+midage_reg_plot_css <- make_plot_dat(new_data7, "45-50", "Regional")
+e_css<-make_plot(midage_reg_plot_css, "E: 45-49 Regional")
 
-o50_reg_plot <- make_plot_dat(new_data7, "over50", "Regional")
-f<-make_plot(o50_reg_plot,"F: >50 Regional")
+o50_reg_plot_css <- make_plot_dat(new_data7, "over50", "Regional")
+f_css<-make_plot(o50_reg_plot_css, "F: 50+ Regional")
 
 
 # Distant
-u45_dist_plot <- make_plot_dat(new_data7, "under45", "Distant")
-g<-make_plot(u45_dist_plot,"G:<45 Distant")
+u45_dist_plot_css <- make_plot_dat(new_data7, "under45", "Distant")
+g_css<-make_plot(u45_dist_plot_css,"G: <45 Distant")
 
-midage_dist_plot <- make_plot_dat(new_data7, "45-50", "Distant")
-h<-make_plot(midage_dist_plot ,"H: 45-50 Distant")
+midage_dist_plot_css <- make_plot_dat(new_data7, "45-50", "Distant")
+h_css<-make_plot(midage_dist_plot_css ,"H: 45-49 Distant")
 
-o50_dist_plot <- make_plot_dat(new_data7, "over50", "Distant")
-i<-make_plot(o50_dist_plot ,"I: >50 Distant")
+o50_dist_plot_css <- make_plot_dat(new_data7, "over50", "Distant")
+i_css<-make_plot(o50_dist_plot_css ,"I: 50+ Distant")
 
-ggarrange(a,b,c,d,e,f,g,h,i,common.legend = TRUE)
-
+ggarrange(a_css,b_css,c_css,d_css,e_css,f_css,g_css,h_css,i_css, common.legend = TRUE, legend = "bottom")
+#?ggarrange()
 #ggsave(plot=last_plot(),file="css_km.png",height=8, width=11.5)
 
 ```
@@ -509,38 +555,38 @@ ggarrange(a,b,c,d,e,f,g,h,i,common.legend = TRUE)
 ## OS plots
 ```{r,fig.width=9,fig.height=6}
 # Local
-u45_local_plot <- make_plot_dat(new_data7, "under45", "Localized",FALSE)
-a<-make_plot(u45_local_plot,"A: <45 Local")
+u45_local_plot_os <- make_plot_dat(new_data7, "under45", "Localized",FALSE)
+a_os<-make_plot(u45_local_plot_os,"A: <45 Local")
 
-midage_local_plot <- make_plot_dat(new_data7, "45-50", "Localized",FALSE)
-b<-make_plot(midage_local_plot,"B: 45-50 Local")
+midage_local_plot_os <- make_plot_dat(new_data7, "45-50", "Localized",FALSE)
+b_os<-make_plot(midage_local_plot_os,"B: 45-49 Local")
 
-o50_local_plot <- make_plot_dat(new_data7, "over50", "Localized",FALSE)
-c<-make_plot(o50_local_plot ,"C: >50 Local")
+o50_local_plot_os <- make_plot_dat(new_data7, "over50", "Localized",FALSE)
+c_os<-make_plot(o50_local_plot_os ,"C: 50+ Local")
 
 
 # Regional
-u45_reg_plot <- make_plot_dat(new_data7, "under45", "Regional",FALSE)
-d<-make_plot(u45_reg_plot,"D: <45 Regional")
+u45_reg_plot_os <- make_plot_dat(new_data7, "under45", "Regional",FALSE)
+d_os<-make_plot(u45_reg_plot_os,"D: <45 Regional")
 
-midage_reg_plot <- make_plot_dat(new_data7, "45-50", "Regional",FALSE)
-e<-make_plot(midage_reg_plot,"E: 45-50 Regional")
+midage_reg_plot_os <- make_plot_dat(new_data7, "45-50", "Regional",FALSE)
+e_os<-make_plot(midage_reg_plot_os,"E: 45-49 Regional")
 
-o50_reg_plot <- make_plot_dat(new_data7, "over50", "Regional",FALSE)
-f<-make_plot(o50_reg_plot,"F: >50 Regional")
+o50_reg_plot_os <- make_plot_dat(new_data7, "over50", "Regional",FALSE)
+f_os<-make_plot(o50_reg_plot_os,"F: 50+ Regional")
 
 
 # Distant
-u45_dist_plot <- make_plot_dat(new_data7, "under45", "Distant",FALSE)
-g<-make_plot(u45_dist_plot,"G:<45 Distant")
+u45_dist_plot_os <- make_plot_dat(new_data7, "under45", "Distant",FALSE)
+g_os<-make_plot(u45_dist_plot_os,"G:<45 Distant")
 
-midage_dist_plot <- make_plot_dat(new_data7, "45-50", "Distant",FALSE)
-h<-make_plot(midage_dist_plot ,"H: 45-50 Distant")
+midage_dist_plot_os <- make_plot_dat(new_data7, "45-50", "Distant",FALSE)
+h_os<-make_plot(midage_dist_plot_os ,"H: 45-49 Distant")
 
-o50_dist_plot <- make_plot_dat(new_data7, "over50", "Distant",FALSE)
-i<-make_plot(o50_dist_plot ,"I: >50 Distant")
+o50_dist_plot_os <- make_plot_dat(new_data7, "over50", "Distant",FALSE)
+i_os<-make_plot(o50_dist_plot_os ,"I: 50+ Distant")
 
-ggarrange(a,b,c,d,e,f,g,h,i,common.legend = TRUE)+ggtitle("OS")
+ggarrange(a_os,b_os,c_os,d_os,e_os,f_os,g_os,h_os,i_os,common.legend = TRUE, legend = "bottom")
 
 #ggsave(plot=last_plot(),file="os_km.png",height=8, width=11.5)
 
