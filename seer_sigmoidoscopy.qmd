@@ -87,7 +87,7 @@ new_data <- new_data %>%
 new_data2 <- new_data %>% 
   filter( !new_stage %in%c("Unknown/unstaged", "In situ"))
 
-# Make nice grade variable
+# Make nice grade variable from different grade styles
 new_data2 <- new_data2 %>% 
   mutate(final_grade = `Grade Pathological (2018+)`)
 
