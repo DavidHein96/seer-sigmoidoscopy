@@ -83,7 +83,8 @@ new_data2 <- new_data2 %>% mutate(final_grade = ifelse(`Grade (thru 2017)` %in% 
 new_data2 <- new_data2 %>% mutate(final_grade = ifelse(final_grade%in%c("A", "B", "Blank(s)", "L","C", "H", "9","D"),"unk_other",final_grade))
 
 # make smaller year of diagnosis groups
-new_data2 <- new_data2 %>% mutate(year_of_diag = case_when(`Year of diagnosis`%in%c('2000', '2001', '2002' ,'2003' ,'2004') ~ "yod1",
+new_data2 <- new_data2 %>% 
+              mutate(year_of_diag = case_when(`Year of diagnosis`%in%c('2000', '2001', '2002' ,'2003' ,'2004') ~ "yod1",
                                                             `Year of diagnosis`%in%c('2005','2006', '2007', '2008' ,'2009') ~ "yod2",
                                                             `Year of diagnosis`%in%c('2010', '2011', '2012' ,'2013' ,'2014') ~ "yod3",
                                                             `Year of diagnosis`%in%c('2015', '2016', '2017' ,'2018' ,'2019') ~ "yod4"))
@@ -92,7 +93,7 @@ new_data2 <- new_data2 %>% mutate(year_of_diag = case_when(`Year of diagnosis`%i
 new_data2<- new_data2%>%rename(race_eth=`Race and origin recode (NHW, NHB, NHAIAN, NHAPI, Hispanic)`)
 
 # Survival
-new_data3<-new_data2%>% mutate(cancer_specific_status = ifelse(`SEER cause-specific death classification`=="Dead (attributable to this cancer dx)",1,0 ))
+new_data3 <- new_data2%>% mutate(cancer_specific_status = ifelse(`SEER cause-specific death classification`=="Dead (attributable to this cancer dx)",1,0 ))
 new_data3<-new_data3%>% mutate(overall_status = ifelse(`Vital status recode (study cutoff used)`=="Alive",0,1 ))
 new_data4<-new_data3%>%filter(`Survival months flag`=='Complete dates are available and there are more than 0 days of survival')
 
@@ -154,9 +155,11 @@ tbl1$`Site recode ICD-O-3/WHO 2008` <- factor(tbl1$`Site recode ICD-O-3/WHO 2008
                                                                                               "Ascending Colon",
                                                                                               "Cecum"
                                                                                               ))
-#table1(~ `Site recode ICD-O-3/WHO 2008` | new_stage*age_group_final, data = tbl1) this prints a pretty html version, to output in github doc we need to use kable
+table1(~ `Site recode ICD-O-3/WHO 2008` | new_stage*age_group_final, data = tbl1) #this prints a pretty html version, to output in github doc we need to use kable
 knitr::kable(table1(~ `Site recode ICD-O-3/WHO 2008` | new_stage*age_group_final, data = tbl1))
+view(a)
 
+table1(~ age_group_final + Sex + new_stage + race_eth + year_of_diag + `Site recode ICD-O-3/WHO 2008` | can_see_sigmoid, data= new_data5)
 ```
 <br>
 
@@ -316,15 +319,19 @@ compute_rmst_with_age <- function(data,time_points,stage,css=TRUE){
   data<-new_data7
   stage="Localized"
   data<-data %>% filter(new_stage==stage)
-  covs<-model.matrix(~age_group_final*can_see_sigmoid,data=data)
   
+  covs<-model.matrix(~age_group_final+can_see_sigmoid,data=data)[,2:4]
   
-  rms_combined <- data.frame(col1="rmst")
+  #test <-rmtl_mod(times=data$survival_months, event = data$cancer_specific_status, tau = 24, cov = covs)
+ # rms_combined <- data.frame(col1="rmst")
   
   for (t in time_points){
     # calcs rmst with alpha corrected for 3 stages and number of time points 
     if (css) {
-       rms_temp <- rmst2(time=data$survival_months,status=data$cancer_specific_status,arm=data$can_see_sigmoid,covariates=covs,tau=t,alpha=0.05/(3*length(time_points)) )
+       rms_temp <- rmst2(time=data$survival_months, status=data$cancer_specific_status, arm=data$can_see_sigmoid, covariates=covs, tau=t,alpha=0.05/(3*length(time_points)) )
+       ?rmst2
+       rmt1_mod(times = data$survival_months, event = data$cancer_specific_status, )
+       
     }else{
        rms_temp <- rmst2(time=data$survival_months,status=data$overall_status,arm=data$can_see_sigmoid,covariates=covs,tau=t,alpha=0.05/(3*length(time_points)) )
     }
@@ -552,7 +559,7 @@ h_css<-make_plot(midage_dist_plot_css ,"H: 45-49 Distant")
 
 o50_dist_plot_css <- make_plot_dat(new_data7, "over50", "Distant")
 i_css<-make_plot(o50_dist_plot_css ,"I: 50+ Distant")
-
+i_css
 ggarrange(a_css,b_css,c_css,d_css,e_css,f_css,g_css,h_css,i_css, common.legend = TRUE, legend = "bottom")
 #?ggarrange()
 #ggsave(plot=last_plot(),file="css_km.png",height=8, width=11.5)

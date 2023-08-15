@@ -17,6 +17,8 @@
 
 # Output files from R CMD build
 /*.tar.gz
+manuscript_stuff/*
+manuscript_stuff
 
 # Output files from R CMD check
 /*.Rcheck/
@@ -46,3 +48,17 @@ old_code_want_to_keep.R
 
 mdir_res.rds
 *.Rproj
+
+.vscode
+*.vscode
+
+*.docx
+*.DS_Store
+*.RData
+*.xlsx
+logistical_issues.Rmd
+
+cif_exp*
+*RDataTmp
+manuscript*
+*.tiff

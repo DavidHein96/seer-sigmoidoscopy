@@ -1,0 +1,570 @@
+---
+title: "SEER Sigmoidoscopy Project"
+author: "david.hein@utsouthwestern.edu"
+date: "`r Sys.Date()`"
+format: 
+    html: 
+        toc: true
+        number_sections: true
+        fig-width: 6
+        fig-height: 3
+  gfm:
+      toc: true
+      number_sections: true
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Load packages and raw data
+```{r, results = 'hide', message = FALSE, warning = FALSE}
+library(broom)
+library(MASS)
+library(survival)
+library(survminer)
+library(tidyverse)
+library(survRM2)
+library(km.ci)
+library(readr)
+library(table1)
+library(epitools)
+library(riskRegression)
+library(adjustedCurves)
+set.seed(2023)
+seer_data <- read_delim("SEERdata42623.txt", delim = "\t", escape_double = FALSE, trim_ws = TRUE)
+```
+
+
+
+# Data cleaning
+```{r}
+# Get only variables we want
+new_data <- seer_data %>% dplyr::select(Sex, `Year of diagnosis`,
+                                `Race and origin recode (NHW, NHB, NHAIAN, NHAPI, Hispanic) - no total`,
+                                `Primary Site`,`Grade Recode (thru 2017)`,
+                                `Grade Pathological (2018+)`,
+                                `Combined Summary Stage (2004+)`,
+                                `Summary stage 2000 (1998-2017)`,
+                                `SEER cause-specific death classification`,
+                                `Survival months`,
+                                `Age recode with single ages and 90+`,
+                                `Survival months flag`,
+                                `Vital status recode (study cutoff used)`,
+                                `Grade Clinical (2018+)`,
+                                `Histologic Type ICD-O-3`,
+                                `COD to site recode ICD-O-3 2023 Revision`,
+                                `SEER other cause of death classification`,
+                                `Site recode ICD-O-3/WHO 2008`)
+
+# need to take out 181 appendix, 260, 188, and 189 because location unknown
+new_data <- new_data %>% 
+  filter(!`Primary Site` %in% c(260, 188, 189, 181))
+
+# only adenocarcinoma
+new_data <- new_data %>% 
+  filter(`Histologic Type ICD-O-3`== 8140)
+
+# make a new variable for site being seen on colonsocopy or sigmoid, should include 186 descending, 187 sigmoid, 199 rectosigmoid junction, 209 rectum NOS
+new_data <- new_data %>% 
+  mutate(can_see_sigmoid = ifelse( `Primary Site` %in% c(186, 187, 199, 209), 1, 0))
+
+# make new variable for 3 age groups
+new_data <- new_data %>%
+  mutate(age_numeric = as.numeric(str_extract(`Age recode with single ages and 90+`, "[:digit:]+")))
+new_data <- new_data %>% 
+  mutate(age_group_final = ifelse(age_numeric <44,'under45', 'over50'))%>%
+  mutate(age_group_final = ifelse(age_numeric <53 & age_numeric >= 44, '45-50', age_group_final))
+
+# Combine the two stages
+new_data <- new_data %>% 
+  mutate(new_stage = ifelse(`Summary stage 2000 (1998-2017)` == "Blank(s)",
+                            `Combined Summary Stage (2004+)`,
+                            `Summary stage 2000 (1998-2017)`))
+
+# Filter out unknown stage an in situ
+new_data2 <- new_data %>% 
+  filter( !new_stage %in%c("Unknown/unstaged", "In situ"))
+
+# Make nice grade variable
+new_data2 <- new_data2 %>% 
+  mutate(final_grade = `Grade Pathological (2018+)`)
+
+new_data2 <- new_data2 %>% 
+  mutate(final_grade = ifelse(`Grade Recode (thru 2017)` %in% "Poorly differentiated; Grade III", "3", final_grade))
+
+new_data2 <- new_data2 %>% 
+  mutate(final_grade = ifelse(`Grade Recode (thru 2017)` %in% "Undifferentiated; anaplastic; Grade IV", "4", final_grade))
+
+new_data2 <- new_data2 %>% 
+  mutate(final_grade = ifelse(`Grade Recode (thru 2017)` %in% "Moderately differentiated; Grade II", "2", final_grade))
+
+new_data2 <- new_data2 %>% 
+  mutate(final_grade = ifelse(`Grade Recode (thru 2017)` %in% "Well differentiated; Grade I", "1", final_grade))
+
+# toss em in an unknown/other
+new_data2 <- new_data2 %>% 
+  mutate(final_grade = ifelse(final_grade %in% c("A", "B", "Blank(s)", "L","C", "H", "9", "D"), "unk_other", final_grade))
+
+# make smaller year of diagnosis groups
+new_data2 <- new_data2 %>% 
+              mutate(year_of_diag = case_when(
+                `Year of diagnosis`%in%c('2000', '2001', '2002' ,'2003' ,'2004') ~ "yod1",
+                `Year of diagnosis`%in%c('2005','2006', '2007', '2008' ,'2009') ~ "yod2",
+                `Year of diagnosis`%in%c('2010', '2011', '2012' ,'2013' ,'2014') ~ "yod3",
+                `Year of diagnosis`%in%c('2015', '2016', '2017' ,'2018' ,'2019','2020') ~ "yod4"))
+
+# make cleaner race/eth column name
+new_data2 <- new_data2 %>% 
+  rename(race_eth=`Race and origin recode (NHW, NHB, NHAIAN, NHAPI, Hispanic) - no total`)
+
+# Survival
+new_data3 <- new_data2 %>% 
+  mutate(cancer_specific_status = case_when(
+    `COD to site recode ICD-O-3 2023 Revision`=="Alive"~0,
+    `SEER cause-specific death classification`=="Dead (attributable to this cancer dx)"~1,
+    `SEER other cause of death classification`=="Dead (attributable to causes other than this cancer dx)"~2,
+    `SEER cause-specific death classification`=="Dead (missing/unknown COD)"~2))
+
+new_data3 <- new_data3 %>% 
+  mutate(overall_status = ifelse(`Vital status recode (study cutoff used)`=="Alive", 0, 1 ))
+
+new_data4 <- new_data3 %>% 
+  filter(`Survival months flag`=='Complete dates are available and there are more than 0 days of survival')
+
+# Remove old data sets to save space
+rm(seer_data)
+rm(new_data)
+rm(new_data2)
+rm(new_data3)
+
+#table(new_data4$cancer_specific_status, useNA = "always")
+```
+
+
+
+# Setting reference groups
+Makes this easier for filling out tables and for regressions
+```{r}
+# first select only variables we know we will be using to save space
+new_data5<-new_data4 %>% dplyr::select(Sex,
+                                       race_eth,
+                                       can_see_sigmoid,
+                                       age_group_final,
+                                       new_stage, 
+                                       final_grade,
+                                       year_of_diag,
+                                       cancer_specific_status, 
+                                       overall_status,
+                                       `Survival months`,
+                                       `Primary Site`,
+                                       age_numeric,
+                                       `Site recode ICD-O-3/WHO 2008`)%>%
+                          rename(survival_months=`Survival months`, primary_site = `Primary Site`)
+
+# set new factor levels, first level is the reference group
+new_data5$new_stage <- factor(new_data5$new_stage, levels = c('Localized', 'Regional', 'Distant'))
+new_data5$age_group_final <- factor(new_data5$age_group_final, levels = c('over50', 'under45', '45-50'))
+new_data5$year_of_diag <- factor(new_data5$year_of_diag, levels = c('yod1', 'yod2', 'yod3', 'yod4'))
+
+# we dont need to specify all levels for race that would take too much typing, we just want to set the largest group as the reference
+new_data5 <- within(new_data5, race_eth <- relevel(factor(race_eth), ref = 'Non-Hispanic White'))
+
+# The grade variable appears to be unreliable
+#table(new_data5$final_grade, new_data5$year_of_diag)
+
+# now using new_data5
+rm(new_data4)
+
+# make sure surv months is numeric
+new_data5 <- new_data5 %>% mutate(survival_months = as.numeric(`survival_months`))
+
+
+# Print out table 1
+#table(new_data5$primary_site,new_data5$age_group_final,new_data5$new_stage)
+
+# Make a nice neat table 1
+tbl1 <- new_data5 %>% dplyr::select(`Site recode ICD-O-3/WHO 2008`, new_stage, age_group_final)
+tbl1$age_group_final <- factor(tbl1$age_group_final, levels = c('under45','45-50','over50'))
+tbl1$`Site recode ICD-O-3/WHO 2008` <- factor(tbl1$`Site recode ICD-O-3/WHO 2008`, 
+                                              levels = c("Rectum",
+                                                         "Rectosigmoid Junction",
+                                                         "Sigmoid Colon",
+                                                         "Descending Colon",
+                                                         "Splenic Flexure",
+                                                         "Transverse Colon",
+                                                         "Hepatic Flexure",
+                                                         "Ascending Colon",
+                                                         "Cecum"))
+
+#table1(~ `Site recode ICD-O-3/WHO 2008` | new_stage*age_group_final, data = tbl1) this prints a pretty html version, to output in github doc we need to use kable
+#knitr::kable(table1(~ `Site recode ICD-O-3/WHO 2008` | new_stage*age_group_final, data = tbl1))
+table1(~ `Site recode ICD-O-3/WHO 2008` | new_stage*age_group_final, data = tbl1)
+```
+
+
+# Stacked Bar graph figure
+```{r, warning=FALSE, message=FALSE}
+# data manipulation for fig
+sum_data <- new_data5 %>% group_by(age_numeric, new_stage) %>% summarize(sigcan = sum(can_see_sigmoid)/n())
+sum_data$nocan <- 1-sum_data$sigcan
+sum_data <- pivot_longer(sum_data, cols = c(sigcan,nocan), names_to = "proptype", values_to = "proportion")
+
+ggplot(sum_data, aes(x = age_numeric, y = proportion, fill = proptype)) +
+  geom_bar(stat = "identity", position="fill", width = 1.1) +
+  facet_wrap(~ new_stage, ncol = 1) +
+  theme_test() +
+  labs(fill = "Visualization on Sigmoidoscopy") +
+  scale_fill_manual(labels = c("Can NOT be visualized", "Can be visualized"), 
+                    values = c("#f4a582", "#92c5de")) +
+  ylab("Proportion of Total Cases") + xlab("Age at diagnosis") +
+  scale_x_continuous(limits = c(18,90), breaks = c(20, 30, 40, 45, 50, 60, 70, 80)) +
+  geom_vline(aes(xintercept = 44.5), color = "black", linetype="dashed", size = 0.4) +
+  geom_vline(aes(xintercept = 49.5), color = "black", linetype="dashed", size = 0.4) 
+
+#ggsave(plot=last_plot(),file="bar_graph.png", heigh=4, width=6,dpi = "retina")
+#ggsave(plot=last_plot(),file="bar_graph.tiff", heigh=4, width=6)
+```
+
+
+
+# Logistic Regression 
+Calculates odds of tumor in location seen on sigmoidoscopy, first univariate then multivariate
+```{r}
+# Code below calculates, exps, and does CI, then only saves the output to save space
+sex_log<-tidy(glm(can_see_sigmoid~Sex,data=new_data5,family="binomial"),conf.int=TRUE)%>%
+          mutate(estimate=exp(estimate), conf.low=exp(conf.low), conf.high=exp(conf.high))
+
+
+sex_log<-glm(can_see_sigmoid~Sex,data=new_data5,family="binomial")
+
+
+age_log<-tidy(glm(can_see_sigmoid~age_group_final,data=new_data5,family="binomial"),conf.int=TRUE)%>%
+          mutate(estimate=exp(estimate), conf.low=exp(conf.low), conf.high=exp(conf.high))
+
+stage_log<-tidy(glm(can_see_sigmoid~new_stage,data=new_data5,family="binomial"),conf.int=TRUE)%>%
+            mutate(estimate=exp(estimate), conf.low=exp(conf.low), conf.high=exp(conf.high))
+
+year_log<-tidy(glm(can_see_sigmoid~year_of_diag,data=new_data5,family="binomial"),conf.int=TRUE)%>%
+            mutate(estimate=exp(estimate), conf.low=exp(conf.low), conf.high=exp(conf.high))
+
+race_log<-tidy(glm(can_see_sigmoid~race_eth,data=new_data5,family="binomial"),conf.int=TRUE)%>%
+            mutate(estimate=exp(estimate), conf.low=exp(conf.low), conf.high=exp(conf.high))
+
+# Multivariate, Check out interactions
+multi_log<-tidy(glm(can_see_sigmoid~race_eth+Sex+age_group_final+new_stage+year_of_diag,data=new_data5,family="binomial"),conf.int=TRUE)%>%
+  mutate(estimate=exp(estimate),conf.low=exp(conf.low),conf.high=exp(conf.high))
+
+propensity_log <- glm(can_see_sigmoid~race_eth+Sex,data=new_data5,family="binomial")
+summary(propensity_log)
+
+
+```
+
+
+
+
+## Logistic results: sex
+```{r}
+knitr::kable(sex_log,digits=2)
+```
+## Logistic results: age
+```{r}
+knitr::kable(age_log,digits=2)
+```
+## Logistic results: stage
+```{r}
+knitr::kable(stage_log,digits=2)
+```
+## Logistic results: year
+```{r}
+knitr::kable(year_log,digits=2)
+```
+## Logistic results: race
+```{r}
+knitr::kable(race_log,digits=2)
+```
+## Logistic results: multivariate
+```{r}
+knitr::kable(multi_log,digits=2)
+```
+
+
+
+# Survival exploration w/OS
+Makes KM curves using OS, checks proportional hazards assumptions
+
+## KM plots: Can see on sigmoidoscopy 
+```{r}
+# CAN SEE
+km_cansee<-survfit(Surv(survival_months, overall_status) ~ can_see_sigmoid, data = new_data5)
+plot(km_cansee,fun="cloglog")
+ggsurvplot(km_cansee,censor=FALSE) # BIGGEST TIME DEPENDANT!!!
+```
+
+## KM plots: Stage
+```{r}
+# STAGE
+km_new_stage<-survfit(Surv(survival_months, overall_status) ~new_stage, data = new_data5)
+plot(km_new_stage,fun="cloglog")
+ggsurvplot(km_new_stage,censor=FALSE)
+```
+
+## KM plots: year of diag
+```{r}
+# YEAR OF DIAG
+km_year_of_diag<-survfit(Surv(survival_months, overall_status) ~ year_of_diag, data = new_data5)
+ggsurvplot(km_year_of_diag,censor=FALSE)
+plot(km_year_of_diag,fun="cloglog")
+```
+
+## KM plots: sex
+```{r}
+# SEX
+km_Sex<-survfit(Surv(survival_months, overall_status) ~ Sex, data = new_data5)
+ggsurvplot(km_Sex,censor=FALSE)
+plot(km_Sex,fun="cloglog") # lines cross but tiny
+```
+
+## KM plots: age group
+```{r}
+# AGE GROUP
+km_age_group_final<-survfit(Surv(survival_months, overall_status) ~ age_group_final, data = new_data5)
+ggsurvplot(km_age_group_final,censor=FALSE) # lines cross but tiny
+plot(km_age_group_final,fun="cloglog") 
+```
+
+## KM plots: race_eth
+```{r}
+# RACE ETH
+km_race_eth<-survfit(Surv(survival_months, overall_status) ~ race_eth, data = new_data6)
+ggsurvplot(km_race_eth,censor=FALSE) # lines cross but insignificant 
+plot(km_race_eth,fun="cloglog") 
+table(new_data5$race_eth)
+```
+
+## KM plots: Site
+```{r}
+# SITE (this is just can see sigmoid with more definition)
+km_site<-survfit(Surv(survival_months, overall_status) ~ primary_site, data = new_data5)
+ggsurvplot(km_site,censor=FALSE,ylim=c(0.5,1),xlim=c(0,100))
+#table(new_data5$primary_site)
+```
+
+
+
+# New way of calculating RMST
+```{r}
+get_adjusted_surv <- function(age_group, stage, osdata) {
+ 
+  os_surv_data <- osdata %>%
+    filter(age_group_final == age_group, new_stage == stage) %>%
+    select(can_see_sigmoid, survival_months, overall_status, race_eth, Sex) %>%
+    mutate(can_see_sigmoid2 = as.factor(ifelse(can_see_sigmoid == 0, "not_see", "can_see")))
+ 
+  propensity_log <- glm(can_see_sigmoid ~ race_eth + Sex, data = os_surv_data, family = "binomial")
+ 
+  surv_adjusted <- adjustedsurv(os_surv_data, variable = "can_see_sigmoid2", ev_time = "survival_months",
+                                event = "overall_status", method = "iptw_km", treatment_model = propensity_log,
+                                conf_int = TRUE, clean_data = TRUE, bootstrap = TRUE, n_boot = 2000, conf_level = 0.95, n_cores = 4)
+  
+  return(surv_adjusted)
+}
+
+
+get_rmst <- function(adj_surv, age_group, stage, months) {
+  
+  alpha_corrected <- 1-(0.05/27)
+  rmst_results <- adjusted_rmst(adj_surv, to = months, difference = FALSE, conf_int = TRUE, group_1 = "not_see", group_2 = "can_see", conf_level = alpha_corrected  )
+
+  rmst_tidy <- rmst_results %>%
+    as.data.frame() %>%
+    mutate(age_group = age_group, stage = stage, time_p = months)
+  return(rmst_tidy)
+}
+
+
+ts <- Sys.time()
+set.seed(2023)
+surv_local_young <- get_adjusted_surv("under45","Localized", new_data6)
+te <- Sys.time()
+print(te-ts)
+set.seed(2023)
+surv_local_mid <- get_adjusted_surv("45-50","Localized", new_data6)
+set.seed(2023)
+surv_local_old <- get_adjusted_surv("over50","Localized", new_data6)
+set.seed(2023)
+surv_reg_young <- get_adjusted_surv("under45","Regional", new_data6)
+set.seed(2023)
+surv_reg_mid <- get_adjusted_surv("45-50","Regional", new_data6)
+set.seed(2023)
+surv_reg_old <- get_adjusted_surv("over50","Regional", new_data6)
+set.seed(2023)
+surv_dist_young <- get_adjusted_surv("under45","Distant", new_data6)
+set.seed(2023)
+surv_dist_mid <- get_adjusted_surv("45-50","Distant", new_data6)
+set.seed(2023)
+surv_dist_old <- get_adjusted_surv("over50","Distant", new_data6)
+
+#cif_local_young <- get_adjusted_cif("under45","Localized", new_data6)
+
+
+(surv_dist_mid)
+plot_rmst_curve(surv_dist_mid)
+d<- as.data.frame(surv_dist_mid$adjsurv)
+make_plot(d, "45-49 Distant")
+a3 <- get_rmst(surv_dist_mid,"mid","Distant",120)
+delta_lm <- rbind( get_rmst(surv_local_mid,"mid","local",24), get_rmst(surv_local_mid,"mid","local",60), get_rmst(surv_local_mid,"mid","local",120))
+
+survs <- list(surv_local_young, surv_local_mid, surv_local_old, surv_reg_young, surv_reg_mid, surv_reg_old, surv_dist_young, surv_dist_mid, surv_dist_old)
+deltas <- data.frame()
+stages <- c("Localized","Regional","Distant")
+ages <- c("under45", "45-50", "over50")
+i <- 0
+for (surv in survs){
+  
+  for (m in c(24,60,120)){
+    deltas <- rbind(deltas, get_rmst(surv, ages[1 + i %% 3], stages[ceiling((i+1)/3)], m))
+  }
+  
+  i <- i + 1
+}
+
+i<-3
+paste0(stages[1 + i %% 3])
+
+write.table(deltas, "all_differences_in_RMST.txt", sep="\t", row.names = FALSE, quote = FALSE)
+get_rmst(surv_local_mid, "Localized","45-50", 120)
+(ceiling((0+1)/3))
+
+plot(surv_dist_old)
+```
+
+# Survival Analysis 
+```{r}
+all_rmst2 <- all_rmst %>% mutate(color_var = factor( paste0(group, as.character(time_p)) , levels=c('not_see120','not_see60','not_see24','can_see120','can_see60','can_see24')))
+
+all_rmst2$age_group <- factor(all_rmst2$age_group, levels=c('under45','45-50','over50'))
+
+all_rmst2$stage <- factor(all_rmst2$stage, levels=c('Distant','Regional','Localized'))
+
+all_rmst2 <- all_rmst2 %>% filter(!(age_group =="45-50" & time_p == 120 & stage=="Distant"))
+
+#ggplot(data = all_rmst, aes(y= rmst, x=age_group, color = as.factor(as.character(time_p)) ,ymin=ci_lower,ymax=ci_upper, group= age_group )) + 
+#  geom_pointrange(position = position_dodge(width=2)) + facet_wrap(~stage)
+?position_dodge
+
+view(all_rmst2)
+all_rmst3<-all_rmst2 %>% mutate(group2 = case_when(age_group == "45-50" ~ "45-49",
+                                                   age_group == "under45" ~ "Under 45",
+                                                   age_group == "over50" ~ "Over 50")) 
+all_rmst3$group2 <- factor(all_rmst3$group2, levels=c('Under 45','45-49','Over 50'))
+
+ggplot(data = all_rmst3, aes(y = rmst, x=stage, color=color_var, ymin=rmst-2.58*se, ymax=rmst+2.58*se, group=group)) + geom_pointrange(position = position_dodge(width=0.5)) + facet_wrap(~group2,ncol=1) + 
+  scale_color_manual(labels = c("Requires Colonoscopy: 10 years", 
+                                "Requires Colonoscopy: 5 years",
+                                "Requires Colonoscopy: 2 years",
+                                "Sigmoidoscopy: 10 years",
+                                "Sigmoidoscopy: 5 years",
+                                "Sigmoidoscopy: 2 years"), 
+                     values = c("#b2182b","#d6604d","#f4a582","#2166ac","#4393c3","#92c5de"),
+                     name = "Tumor location \nand RMST follow up time")  + 
+  coord_flip() + 
+  scale_y_continuous(limits=c(0,122), breaks=c(0,24,60,120),labels=c("0","2","5","10")) + 
+  theme_bw() + 
+  theme(panel.grid.minor = element_blank(),
+        panel.grid.major.x = element_line(linetype = 2)) + 
+  ylab("Years of Follow Up") + xlab("")
+
+ggsave(plot=last_plot(), filename = "rmst_fig.tiff", width=8, height=6)
+
+```
+
+## OS
+
+### Local
+```{r}
+knitr::kable(local_res_combined_os,digits=3)
+```
+### Regional
+```{r}
+knitr::kable(regional_res_combined_os,digits=3)
+```
+### Distant
+```{r}
+knitr::kable(distant_res_combined_os,digits=3)
+```
+
+
+
+# KM Plots with better 95% CIs
+```{r}
+
+make_plot <- function(plot_dat,fig_title){# takes in plot data generated from make_plot_dat plus a string as the fig title, returns ggplot object of KM plot
+  
+  plot_dat2 <- as.data.frame(plot_dat$adjsurv)
+  
+  p <- ggplot(plot_dat2 ,aes(x=time,y=surv,color=group))+
+    geom_step()+
+    # set custom y axis limits, might actually want to just have the at 0,1 for all graphs 
+    ylim(if(str_detect(fig_title,"Distant")) c(0,1) else c(0,1))+
+    geom_ribbon(aes(ymin=ci_lower,ymax=ci_upper,x=time,fill=group),alpha=.2,size=0.1)+
+    ggtitle(fig_title)+theme_test()+
+    theme(
+      plot.title = element_text(size=12),
+      axis.title = element_blank(),
+      panel.grid.major.x = element_line(linewidth=0.2,linetype = 3)
+      )+
+    # x axis breaks at 2,5,10, and 15 years
+    scale_x_continuous(limits=c(0,240),breaks=c(0,24,60,120,180),labels=c("0","2","5","10","15"))+
+    labs(fill="Tumor Location",color="Tumor Location")+
+    scale_fill_manual(labels= c("Can be seen on sigmoidoscopy", "Can NOT be seen on sigmoidoscopy"),values=c("#92c5de","#f4a582")) +
+    scale_color_manual(labels= c("Can be seen on sigmoidoscopy", "Can NOT be seen on sigmoidoscopy"),values=c("#0571b0","#ca0020"))
+    
+  return(p)
+}
+
+#text = element_text(family = "Calibri")
+```
+
+
+
+## OS plots NEW
+```{r,fig.width=9,fig.height=6}
+# Local
+a_os<-make_plot(surv_local_young,"A: <45 Local")
+
+b_os<-make_plot(surv_local_mid,"B: 45-49 Local")
+
+c_os<-make_plot(surv_local_old ,"C: 50+ Local")
+
+
+# Regional
+d_os<-make_plot(surv_reg_young,"D: <45 Regional")
+
+e_os<-make_plot(surv_reg_mid,"E: 45-49 Regional")
+
+f_os<-make_plot(surv_reg_old,"F: 50+ Regional")
+
+
+# Distant
+g_os<-make_plot(surv_dist_young,"G:<45 Distant")
+
+h_os<-make_plot(surv_dist_mid ,"H: 45-49 Distant")
+
+i_os<-make_plot(surv_dist_old ,"I: 50+ Distant")
+
+ggarrange(a_os,b_os,c_os,d_os,e_os,f_os,g_os,h_os,i_os,common.legend = TRUE, legend = "bottom")
+
+ggsave(plot=last_plot(),file="os_km2.tiff",height=8, width=11.5)
+
+```
+
+
+# Session Info
+```{r}
+sessionInfo()
+```
+
+
