@@ -18,6 +18,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
+
 # Load packages and raw data
 ```{r, results = 'hide', message = FALSE, warning = FALSE}
 library(broom)
@@ -35,6 +36,7 @@ library(adjustedCurves)
 set.seed(2023)
 seer_data <- read_delim("SEERdata42623.txt", delim = "\t", escape_double = FALSE, trim_ws = TRUE)
 ```
+
 
 
 
@@ -120,6 +122,7 @@ new_data2 <- new_data2 %>%
   rename(race_eth=`Race and origin recode (NHW, NHB, NHAIAN, NHAPI, Hispanic) - no total`)
 
 # Survival
+# CSS
 new_data3 <- new_data2 %>% 
   mutate(cancer_specific_status = case_when(
     `COD to site recode ICD-O-3 2023 Revision`=="Alive"~0,
@@ -127,6 +130,7 @@ new_data3 <- new_data2 %>%
     `SEER other cause of death classification`=="Dead (attributable to causes other than this cancer dx)"~2,
     `SEER cause-specific death classification`=="Dead (missing/unknown COD)"~2))
 
+# OS
 new_data3 <- new_data3 %>% 
   mutate(overall_status = ifelse(`Vital status recode (study cutoff used)`=="Alive", 0, 1 ))
 
@@ -142,6 +146,8 @@ rm(new_data3)
 #######################################################################
 #table(new_data4$cancer_specific_status, useNA = "always")
 ```
+
+
 
 
 
@@ -205,28 +211,51 @@ table1(~ `Site recode ICD-O-3/WHO 2008` | new_stage*age_group_final, data = tbl1
 ```
 
 
+
+
 # Stacked Bar graph figure
 ```{r, warning=FALSE, message=FALSE}
-# data manipulation for fig
-sum_data <- new_data5 %>% group_by(age_numeric, new_stage) %>% summarize(sigcan = sum(can_see_sigmoid)/n())
+# Group the 'new_data5' dataframe by 'age_numeric' and 'new_stage' and calculate the proportion
+# of cases that can see a sigmoid.
+sum_data <- new_data5 %>% 
+  group_by(age_numeric, new_stage) %>% 
+  summarize(sigcan = sum(can_see_sigmoid)/n())
+
+# Calculate the proportion of cases that cannot see a sigmoid and store in a new column 'nocan'.
 sum_data$nocan <- 1-sum_data$sigcan
+
+# Reshape the dataframe from wide to long format, converting 'sigcan' and 'nocan' columns to 
+# 'proptype' and 'proportion' columns.
 sum_data <- pivot_longer(sum_data, cols = c(sigcan,nocan), names_to = "proptype", values_to = "proportion")
 
+# Plot the data using ggplot2.
 ggplot(sum_data, aes(x = age_numeric, y = proportion, fill = proptype)) +
+  # Use bars to represent the data. The height of the bars indicates the proportion.
   geom_bar(stat = "identity", position="fill", width = 1.1) +
+  # Split the plot into multiple panels based on the 'new_stage' column.
   facet_wrap(~ new_stage, ncol = 1) +
+  # Use the 'test' theme for the plot. This theme provides a clean and minimalistic look.
   theme_test() +
+  # Label the fill colors to indicate whether the sigmoid can or cannot be visualized.
   labs(fill = "Visualization on Sigmoidoscopy") +
+  # Manually set the fill colors and their corresponding labels.
   scale_fill_manual(labels = c("Can NOT be visualized", "Can be visualized"), 
                     values = c("#f4a582", "#92c5de")) +
+  # Label the y-axis and x-axis.
   ylab("Proportion of Total Cases") + xlab("Age at diagnosis") +
+  # Set the limits and breaks for the x-axis.
   scale_x_continuous(limits = c(18,90), breaks = c(20, 30, 40, 45, 50, 60, 70, 80)) +
+  # Add two vertical dashed lines at x = 44.5 and x = 49.5.
   geom_vline(aes(xintercept = 44.5), color = "black", linetype="dashed", size = 0.4) +
-  geom_vline(aes(xintercept = 49.5), color = "black", linetype="dashed", size = 0.4) 
+  geom_vline(aes(xintercept = 49.5), color = "black", linetype="dashed", size = 0.4)
+
 
 #ggsave(plot=last_plot(),file="bar_graph.png", heigh=4, width=6,dpi = "retina")
 #ggsave(plot=last_plot(),file="bar_graph.tiff", heigh=4, width=6)
+
+
 ```
+
 
 
 
@@ -290,6 +319,7 @@ knitr::kable(race_log,digits=2)
 ```{r}
 knitr::kable(multi_log,digits=2)
 ```
+
 
 
 
@@ -357,35 +387,71 @@ ggsurvplot(km_site,censor=FALSE,ylim=c(0.5,1),xlim=c(0,100))
 
 # New way of calculating RMST
 ```{r}
+# Define a function to compute the adjusted survival curve for a specific age group and stage.
 get_adjusted_surv <- function(age_group, stage, osdata) {
- 
+
+  # Filter the input dataset based on the given age group and stage.
+  # Select the relevant columns and recode the 'can_see_sigmoid' variable.
   os_surv_data <- osdata %>%
     filter(age_group_final == age_group, new_stage == stage) %>%
     select(can_see_sigmoid, survival_months, overall_status, race_eth, Sex) %>%
     mutate(can_see_sigmoid2 = as.factor(ifelse(can_see_sigmoid == 0, "not_see", "can_see")))
- 
+
+  # Fit a logistic regression model to estimate the propensity scores. 
+  # The propensity score model predicts the probability of seeing sigmoid based on race and sex.
   propensity_log <- glm(can_see_sigmoid ~ race_eth + Sex, data = os_surv_data, family = "binomial")
- 
-  surv_adjusted <- adjustedsurv(os_surv_data, variable = "can_see_sigmoid2", ev_time = "survival_months",
-                                event = "overall_status", method = "iptw_km", treatment_model = propensity_log,
-                                conf_int = TRUE, clean_data = TRUE, bootstrap = TRUE, n_boot = 2000, conf_level = 0.95, n_cores = 4)
+
+  # Compute the adjusted survival curves using the inverse probability of treatment weighting (IPTW) method. 
+  # The adjustment is done based on the propensity scores derived from the logistic regression model.
+  surv_adjusted <- adjustedsurv(os_surv_data, 
+                                variable = "can_see_sigmoid2", 
+                                ev_time = "survival_months",
+                                event = "overall_status", 
+                                method = "iptw_km", 
+                                treatment_model = propensity_log,
+                                conf_int = TRUE, 
+                                clean_data = TRUE, 
+                                bootstrap = TRUE, 
+                                n_boot = 2000, 
+                                conf_level = 0.95, 
+                                # May need to delete the n_cores line if computer crashes!
+                                n_cores = 4)
   
+  # Return the computed adjusted survival curve.
   return(surv_adjusted)
 }
 
 
+# View the documentation for the 'adjustedsurv' function.
+?adjustedsurv
+
+# Define a function to compute the restricted mean survival time (RMST) based on the adjusted survival curve.
 get_rmst <- function(adj_surv, age_group, stage, months) {
   
+  # Correct the significance level for multiple testing (27 tests).
   alpha_corrected <- 1-(0.05/27)
-  rmst_results <- adjusted_rmst(adj_surv, to = months, difference = FALSE, conf_int = TRUE, group_1 = "not_see", group_2 = "can_see", conf_level = alpha_corrected  )
 
+  # Compute the RMST for two groups ('not_see' and 'can_see') based on the adjusted survival curve.
+  # CHANGE DIFFERENCE TO TRUE TO COMPUTE DIFFERENCE IN RMST
+  rmst_results <- adjusted_rmst(adj_surv, 
+                                to = months, 
+                                difference = FALSE, 
+                                conf_int = TRUE, 
+                                group_1 = "not_see", 
+                                group_2 = "can_see", 
+                                conf_level = alpha_corrected)
+
+  # Convert the RMST results to a data frame and add additional columns (age group, stage, and time point).
   rmst_tidy <- rmst_results %>%
     as.data.frame() %>%
     mutate(age_group = age_group, stage = stage, time_p = months)
+  
+  # Return the tidied RMST results.
   return(rmst_tidy)
 }
 
 
+# Get all adjusted curves, set seed for reproducibility 
 ts <- Sys.time()
 set.seed(2023)
 surv_local_young <- get_adjusted_surv("under45","Localized", new_data6)
@@ -408,101 +474,110 @@ surv_dist_mid <- get_adjusted_surv("45-50","Distant", new_data6)
 set.seed(2023)
 surv_dist_old <- get_adjusted_surv("over50","Distant", new_data6)
 
-#cif_local_young <- get_adjusted_cif("under45","Localized", new_data6)
 
 
-(surv_dist_mid)
-plot_rmst_curve(surv_dist_mid)
-d<- as.data.frame(surv_dist_mid$adjsurv)
-make_plot(d, "45-49 Distant")
-a3 <- get_rmst(surv_dist_mid,"mid","Distant",120)
-delta_lm <- rbind( get_rmst(surv_local_mid,"mid","local",24), get_rmst(surv_local_mid,"mid","local",60), get_rmst(surv_local_mid,"mid","local",120))
 
-survs <- list(surv_local_young, surv_local_mid, surv_local_old, surv_reg_young, surv_reg_mid, surv_reg_old, surv_dist_young, surv_dist_mid, surv_dist_old)
-deltas <- data.frame()
+# Create a list of adjusted survival curve objects.
+# These objects likely represent survival curves for different combinations of age groups and disease stages.
+survs <- list(surv_local_young, surv_local_mid, surv_local_old, 
+              surv_reg_young, surv_reg_mid, surv_reg_old, 
+              surv_dist_young, surv_dist_mid, surv_dist_old)
+
+# Initialize an empty data frame to store the results from the RMST calculations.
+all_rmsts <- data.frame()
+
+# Define the disease stages and age groups as vectors.
 stages <- c("Localized","Regional","Distant")
 ages <- c("under45", "45-50", "over50")
+
+# Initialize a counter 'i' to keep track of the current iteration.
 i <- 0
-for (surv in survs){
+
+# Loop through each adjusted survival curve object in the 'survs' list.
+for (surv in survs) {
   
-  for (m in c(24,60,120)){
-    deltas <- rbind(deltas, get_rmst(surv, ages[1 + i %% 3], stages[ceiling((i+1)/3)], m))
+  # For each survival curve object, calculate the RMST at 3 specific time points: 24, 60, and 120 months.
+  for (m in c(24,60,120)) {
+    # Call the 'get_rmst' function to compute the RMST for the current survival curve object, 
+    # corresponding age group, and disease stage at the time point 'm'.
+       # Using modulo arithmetic to cyclically select age groups in the order "under45", "45-50", "over50".
+       # for i=0,1,2,3,4,5,…, the expression i %% 3 will yield 0, 1, 2, 0, 1, 2 etc.
+       # Using ceiling to round up values to switch disease states every 3 iterations
+       # for i=0,1,2,3,4,5,…, the expression ceiling((i+1)/3) will yield 0.33,0.67,1,1.33,1.67,2 etc.
+    # Append the resulting data frame to the 'all_rmsts ' data frame.
+    all_rmsts  <- rbind(all_rmsts , get_rmst(surv, ages[1 + i %% 3], stages[ceiling((i+1)/3)], m))
   }
   
+  # Increment the counter 'i' for the next iteration.
   i <- i + 1
 }
 
-i<-3
-paste0(stages[1 + i %% 3])
+#write.table(deltas, "all_RMST.txt", sep="\t", row.names = FALSE, quote = FALSE)
 
-write.table(deltas, "all_differences_in_RMST.txt", sep="\t", row.names = FALSE, quote = FALSE)
-get_rmst(surv_local_mid, "Localized","45-50", 120)
-(ceiling((0+1)/3))
-
-plot(surv_dist_old)
 ```
+
+
+
 
 # Survival Analysis 
 ```{r}
-all_rmst2 <- all_rmst %>% mutate(color_var = factor( paste0(group, as.character(time_p)) , levels=c('not_see120','not_see60','not_see24','can_see120','can_see60','can_see24')))
+# Organize and recode the 'all_rmst' dataframe for plotting.
+all_rmst2 <- all_rmst %>% 
+  # Create a new variable 'color_var' combining 'group' and 'time_p' to determine colors in the plot.
+  mutate(color_var = factor(paste0(group, as.character(time_p)), 
+                            levels=c('not_see120','not_see60','not_see24','can_see120','can_see60','can_see24'))) %>%
+  # Ensure proper ordering of the 'age_group' and 'stage' variables for the plot.
+  mutate(age_group = factor(age_group, levels=c('under45','45-50','over50')),
+         stage = factor(stage, levels=c('Distant','Regional','Localized'))) %>%
+  # Filter out specific combinations of 'age_group', 'time_p', and 'stage'. 
+    # Filtered out because there are not enough data points to accuratly asses confidence interval
+  filter(!(age_group =="45-50" & time_p == 120 & stage=="Distant"))
 
-all_rmst2$age_group <- factor(all_rmst2$age_group, levels=c('under45','45-50','over50'))
 
-all_rmst2$stage <- factor(all_rmst2$stage, levels=c('Distant','Regional','Localized'))
 
-all_rmst2 <- all_rmst2 %>% filter(!(age_group =="45-50" & time_p == 120 & stage=="Distant"))
+# Recode age groups for better readability in the plot.
+all_rmst3 <- all_rmst2 %>%
+  mutate(group2 = case_when(
+    age_group == "45-50" ~ "45-49",
+    age_group == "under45" ~ "Under 45",
+    age_group == "over50" ~ "Over 50"
+  )) %>%
+  mutate(group2 = factor(group2, levels=c('Under 45','45-49','Over 50')))
 
-#ggplot(data = all_rmst, aes(y= rmst, x=age_group, color = as.factor(as.character(time_p)) ,ymin=ci_lower,ymax=ci_upper, group= age_group )) + 
-#  geom_pointrange(position = position_dodge(width=2)) + facet_wrap(~stage)
-?position_dodge
 
-view(all_rmst2)
-all_rmst3<-all_rmst2 %>% mutate(group2 = case_when(age_group == "45-50" ~ "45-49",
-                                                   age_group == "under45" ~ "Under 45",
-                                                   age_group == "over50" ~ "Over 50")) 
-all_rmst3$group2 <- factor(all_rmst3$group2, levels=c('Under 45','45-49','Over 50'))
-
-ggplot(data = all_rmst3, aes(y = rmst, x=stage, color=color_var, ymin=rmst-2.58*se, ymax=rmst+2.58*se, group=group)) + geom_pointrange(position = position_dodge(width=0.5)) + facet_wrap(~group2,ncol=1) + 
-  scale_color_manual(labels = c("Requires Colonoscopy: 10 years", 
-                                "Requires Colonoscopy: 5 years",
-                                "Requires Colonoscopy: 2 years",
-                                "Sigmoidoscopy: 10 years",
-                                "Sigmoidoscopy: 5 years",
-                                "Sigmoidoscopy: 2 years"), 
-                     values = c("#b2182b","#d6604d","#f4a582","#2166ac","#4393c3","#92c5de"),
-                     name = "Tumor location \nand RMST follow up time")  + 
+# Plotting the RMST data.
+ggplot(data = all_rmst3, aes(y = rmst, x = stage, color = color_var, 
+                             ymin = rmst-2.58*se, ymax = rmst+2.58*se, 
+                             group = group)) + 
+  # this is the specific geom that makes the graph
+  geom_pointrange(position = position_dodge(width=0.5)) + 
+  facet_wrap(~group2, ncol=1) + 
+  scale_color_manual(
+    labels = c("Requires Colonoscopy: 10 years", "Requires Colonoscopy: 5 years", "Requires Colonoscopy: 2 years",
+               "Sigmoidoscopy: 10 years", "Sigmoidoscopy: 5 years", "Sigmoidoscopy: 2 years"), 
+    values = c("#b2182b","#d6604d","#f4a582","#2166ac","#4393c3","#92c5de"),
+    name = "Tumor location \nand RMST follow up time"
+  ) + 
   coord_flip() + 
-  scale_y_continuous(limits=c(0,122), breaks=c(0,24,60,120),labels=c("0","2","5","10")) + 
+  scale_y_continuous(limits=c(0,122), breaks=c(0,24,60,120), labels=c("0","2","5","10")) + 
   theme_bw() + 
-  theme(panel.grid.minor = element_blank(),
-        panel.grid.major.x = element_line(linetype = 2)) + 
-  ylab("Years of Follow Up") + xlab("")
+  theme(panel.grid.minor = element_blank(), panel.grid.major.x = element_line(linetype = 2)) + 
+  ylab("Years of Follow Up") + 
+  xlab("")
 
-ggsave(plot=last_plot(), filename = "rmst_fig.tiff", width=8, height=6)
+# Save the generated plot as a TIFF image.
+ggsave(plot = last_plot(), filename = "rmst_fig.tiff", width = 8, height = 6)
+
 
 ```
 
-## OS
-
-### Local
-```{r}
-knitr::kable(local_res_combined_os,digits=3)
-```
-### Regional
-```{r}
-knitr::kable(regional_res_combined_os,digits=3)
-```
-### Distant
-```{r}
-knitr::kable(distant_res_combined_os,digits=3)
-```
 
 
 
 # KM Plots with better 95% CIs
 ```{r}
-
-make_plot <- function(plot_dat,fig_title){# takes in plot data generated from make_plot_dat plus a string as the fig title, returns ggplot object of KM plot
+# takes in plot data generated from make_plot_dat plus a string as the fig title, returns ggplot object of KM plot
+make_plot <- function(plot_dat,fig_title){
   
   plot_dat2 <- as.data.frame(plot_dat$adjsurv)
   
@@ -556,6 +631,7 @@ h_os<-make_plot(surv_dist_mid ,"H: 45-49 Distant")
 
 i_os<-make_plot(surv_dist_old ,"I: 50+ Distant")
 
+# combine and arrage all plots in a single fig
 ggarrange(a_os,b_os,c_os,d_os,e_os,f_os,g_os,h_os,i_os,common.legend = TRUE, legend = "bottom")
 
 ggsave(plot=last_plot(),file="os_km2.tiff",height=8, width=11.5)

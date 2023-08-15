@@ -435,26 +435,7 @@ knitr::kable(regional_res_combined_css,digits=3)
 ```{r}
 knitr::kable(distant_res_combined_css,digits=3)
 ```
-<br>
-
-
-## OS
-
-### Local
-```{r}
-knitr::kable(local_res_combined_os,digits=3)
-```
-### Regional
-```{r}
-knitr::kable(regional_res_combined_os,digits=3)
-```
-### Distant
-```{r}
-knitr::kable(distant_res_combined_os,digits=3)
-```
-
 <br><br>
-
 
 
 
@@ -497,7 +478,8 @@ make_plot_dat <- function(data_set, age_grp, stage, css = TRUE){
   return(plt3)
 }
 
-make_plot <- function(plot_dat,fig_title){# takes in plot data generated from make_plot_dat plus a string as the fig title, returns ggplot object of KM plot
+# takes in plot data generated from make_plot_dat plus a string as the fig title, returns ggplot object of KM plot
+make_plot <- function(plot_dat,fig_title){
   
   p <- ggplot(plot_dat ,aes(x=time,y=surv,color=type))+
     geom_step()+
@@ -559,9 +541,9 @@ h_css<-make_plot(midage_dist_plot_css ,"H: 45-49 Distant")
 
 o50_dist_plot_css <- make_plot_dat(new_data7, "over50", "Distant")
 i_css<-make_plot(o50_dist_plot_css ,"I: 50+ Distant")
-i_css
+
+# combine all plots into a single fig
 ggarrange(a_css,b_css,c_css,d_css,e_css,f_css,g_css,h_css,i_css, common.legend = TRUE, legend = "bottom")
-#?ggarrange()
 #ggsave(plot=last_plot(),file="css_km.png",height=8, width=11.5)
 
 ```
