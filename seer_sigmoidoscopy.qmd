@@ -139,6 +139,7 @@ rm(new_data)
 rm(new_data2)
 rm(new_data3)
 
+#######################################################################
 #table(new_data4$cancer_specific_status, useNA = "always")
 ```
 
